@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+    /* UX Mobile Otimizado */
+    .btn-action {
+        border-radius: 8px; font-weight: 600; font-size: 0.85rem;
+        display: inline-flex; align-items: center; justify-content: center;
+        gap: 6px; padding: 0.5rem 1rem; transition: all 0.2s; border: 1px solid transparent; white-space: nowrap;
+    }
+    .btn-action:hover { transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.08); }
+    
+    .btn-view { background-color: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+    .btn-go { background-color: #2563eb; color: white; }
+    
+    /* Estilo para o botão "Receber Tudo" (Roxo/Indigo) */
+    .btn-all { background-color: #6366f1; color: white; border: none; }
+    .btn-all:hover { background-color: #4f46e5; color: white; }
+    
+    .btn-del { background-color: #fee2e2; color: #dc2626; border-color: #fecaca; }
+    
+    /* Botões Pequenos para Tabela de Detalhes */
+    .btn-note { 
+        width: 32px; height: 32px; padding: 0; border-radius: 6px; 
+        color: #94a3b8; border: 1px solid #cbd5e1; background: white; 
+        display: inline-flex; align-items: center; justify-content: center; 
+        transition: all 0.2s;
+    }
+    .btn-note.has-obs { 
+        background-color: #fffbeb; color: #d97706; border-color: #fcd34d; 
+    }
+    .btn-undo-sm {
+        width: 32px; height: 32px; padding: 0; border-radius: 6px;
+        background-color: #fff1f2; color: #e11d48; border: 1px solid #fecdd3;
+        display: inline-flex; align-items: center; justify-content: center;
+    }
+
+    .table-custom td { vertical-align: middle; padding-top: 1rem; padding-bottom: 1rem; }
+    .progress-thin { height: 8px; border-radius: 4px; background-color: #e2e8f0; }
+    
+    /* Ajuste Fino para Mobile */
+    @media (max-width: 768px) {
+        .col-acao-mobile { width: 45% !important; }
+        .col-prog-mobile { width: 25% !important; }
+        .btn-action { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div><h4 class="text-dark fw-bold mb-0">Manifestos</h4><p class="text-muted small mb-0">Gestão de cargas</p></div>
+    <div class="d-flex gap-2">
+        <a href="/busca" class="btn btn-white border shadow-sm btn-action text-secondary py-2"><i class="bi bi-search"></i> Buscar</a>
+        <a href="/novo" class="btn btn-go shadow-sm btn-action py-2"><i class="bi bi-plus-lg"></i> Novo</a>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 overflow-hidden rounded-4">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle table-custom">
+                <thead class="bg-light text-secondary text-uppercase small fw-bold">
+                    <tr>
+                        <th class="py-3 ps-4" width="25%">Manifesto</th>
+                        <!-- CORREÇÃO AQUI: d-none d-md-table-cell no Header também -->
+                        <th class="py-3 d-none d-md-table-cell" width="15%">Data</th>
+                        <th class="py-3 text-center col-prog-mobile" width="20%">Progresso</th>
+                        <th class="py-3 text-center col-acao-mobile" width="40%">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in manifestos %}
+                    <tr>
+                        <td class="ps-4">
+                            <span class="fw-bold text-dark fs-6">{{ m.numero_manifesto }}</span>
+                            <!-- Data aparece aqui no mobile -->
+                            <div class="d-block d-md-none text-muted small mt-1">{{ m.data_manifesto }}</div>
+                        </td>
+                        <!-- Coluna Data some no mobile -->
+                        <td class="text-secondary d-none d-md-table-cell">{{ m.data_manifesto }}</td>
+                        
+                        <td class="text-center px-2 px-md-4">
+                            {% set total = m.total_caixas_expedidas or 1 %}
+                            {% set rec = m.total_caixas_recebidas or 0 %}
+                            {% set pct = (rec / total * 100) | round %}
+                            
+                            <div class="d-flex align-items-center justify-content-between mb-1 small">
+                                <span class="fw-bold text-dark">{{ pct }}%</span>
+                                <span class="text-muted d-none d-sm-inline">{{ rec }}/{{ total }}</span>
+                            </div>
+                            <div class="progress progress-thin">
+                                <div class="progress-bar {% if pct == 100 %}bg-success{% else %}bg-primary{% endif %}" style="width: {{ pct }}%"></div>
+                            </div>
+                            <!-- Status Texto (Apenas Desktop para economizar espaço no mobile) -->
+                            <div class="mt-2 d-none d-md-block">
+                                {% if m.status == 'TOTALMENTE RECEBIDO' %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Concluído</span>
+                                {% elif m.status == 'PARCIALMENTE RECEBIDO' %}
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">Em Andamento</span>
+                                {% else %}
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill">Pendente</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                <!-- Botão Detalhes -->
+                                <button class="btn btn-action btn-view" onclick="abrirDetalhes({{ m.id }}, '{{ m.numero_manifesto }}')" title="Ver Detalhes">
+                                    <i class="bi bi-eye-fill"></i>
+                                </button>
+                                
+                                <!-- Botão Conferir (Principal) -->
+                                <a href="/conferencia/{{ m.id }}" class="btn btn-action btn-go" onclick="return confirm('Iniciar conferência do manifesto {{ m.numero_manifesto }}?')" title="Conferir">
+                                    <i class="bi bi-clipboard-check-fill"></i> <span class="d-none d-xl-inline">Conferir</span>
+                                </a>
+
+                                <!-- Botão RECEBER TUDO -->
+                                {% if m.status != 'TOTALMENTE RECEBIDO' %}
+                                <button class="btn btn-action btn-all" onclick="receberTudoManifesto({{ m.id }}, '{{ m.numero_manifesto }}')" title="Receber Manifesto Inteiro">
+                                    <i class="bi bi-check-all"></i> <span class="d-none d-xl-inline">Receber Tudo</span>
+                                </button>
+                                {% endif %}
+                                
+                                <!-- Botão Excluir -->
+                                <form action="/excluir/{{ m.id }}" method="POST" onsubmit="return confirmarExclusao(this)" class="d-inline">
+                                    <input type="hidden" name="senha">
+                                    <button type="submit" class="btn btn-action btn-del" title="Remover">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center py-5 text-muted">Nenhum manifesto importado ainda.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DETALHES -->
+<div class="modal fade" id="modalDetalhes" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0">
+            <div class="modal-header border-bottom-0"><h5 class="modal-title fw-bold">📋 Detalhes <span id="tituloDetalhes" class="text-primary"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped mb-0 small align-middle">
+                        <thead class="table-light text-center">
+                            <tr>
+                                <th>Remetente</th>
+                                <th>Volume</th>
+                                <th>Destino</th>
+                                <th>Obs</th>
+                                <th>Qtd</th>
+                                <th>Recebido Em</th>
+                                <th>Por</th>
+                                <th>Status</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoDetalhes"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0"><button class="btn btn-light btn-action rounded-pill" data-bs-dismiss="modal">Fechar</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL OBSERVAÇÃO -->
+<div class="modal fade" id="modalObs" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-4 border-0"><div class="modal-header bg-light border-bottom-0"><h5 class="modal-title">📝 Observação</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="obsVolId"><p class="small text-muted" id="obsVolTitulo"></p><textarea id="obsTexto" class="form-control rounded-3" rows="4" placeholder="Escreva aqui..."></textarea></div><div class="modal-footer border-top-0"><button class="btn btn-light btn-action" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-go btn-action" onclick="salvarObs()">Salvar</button></div></div></div></div>
+
+<script>
+    let modalDetalhes = null;
+    let modalObs = null;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        modalDetalhes = new bootstrap.Modal(document.getElementById('modalDetalhes'));
+        modalObs = new bootstrap.Modal(document.getElementById('modalObs'));
+    });
+
+    function confirmarExclusao(form) { 
+        const s = prompt("🔒 Área Restrita\nDigite a senha de Admin para excluir:"); 
+        if (!s) return false; 
+        form.senha.value = s; 
+        return true; 
+    }
+    
+    // FUNÇÃO RECEBER TUDO
+    async function receberTudoManifesto(mid, num) {
+        if(!confirm(`⚠️ ATENÇÃO!\n\nVocê está prestes a marcar TODOS os volumes do manifesto ${num} como RECEBIDOS.\n\nIsso pulará a conferência individual.\n\nDeseja continuar?`)) return;
+        try {
+            document.body.style.cursor = 'wait';
+            const res = await fetch('/api/receber_tudo_manifesto', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({manifesto_id: mid}) });
+            if(res.ok) { alert("Manifesto recebido com sucesso!"); window.location.reload(); } else { alert("Erro ao processar o recebimento."); }
+        } catch(e) { alert("Erro de conexão com o servidor."); } finally { document.body.style.cursor = 'default'; }
+    }
+    
+    // OBSERVAÇÃO
+    function abrirObs(btn) { 
+        document.getElementById('obsVolId').value = btn.dataset.id;
+        document.getElementById('obsVolTitulo').innerText = btn.dataset.num;
+        document.getElementById('obsTexto').value = btn.dataset.obs; 
+        modalObs.show(); 
+    }
+
+    async function salvarObs() { 
+        const id = document.getElementById('obsVolId').value; 
+        const txt = document.getElementById('obsTexto').value; 
+        await fetch('/api/observacao', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:id,texto:txt})}); 
+        modalObs.hide(); 
+        window.location.reload(); 
+    }
+
+    // DESFAZER (Interface Principal)
+    async function desfazerRecebimentoDetalhes(vid) { 
+        const s = prompt("🔒 DESFAZER\n\nRequer senha de administrador:"); 
+        if (s !== "pitaco" && s !== "admin123") return alert("Senha incorreta.");
+        
+        try {
+            const res = await fetch('/api/desfazer', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:vid})});
+            if (res.ok) { alert("Desfeito com sucesso!"); window.location.reload(); }
+        } catch(e) { alert("Erro de conexão."); }
+    }
+
+    // ABRIR DETALHES
+    async function abrirDetalhes(id, numero) {
+        document.getElementById('tituloDetalhes').innerText = numero;
+        const corpo = document.getElementById('corpoDetalhes');
+        corpo.innerHTML = '<tr><td colspan="9" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
+        modalDetalhes.show();
+        try {
+            const res = await fetch(`/api/manifesto/${id}/volumes`);
+            const volumes = await res.json();
+            corpo.innerHTML = '';
+            volumes.forEach(v => {
+                const tr = document.createElement('tr');
+                const isRec = v.status === 'COMPLETO' || v.status === 'TOTALMENTE RECEBIDO';
+                let dataRec = v.data_hora_ultima_recepcao ? new Date(v.data_hora_ultima_recepcao).toLocaleDateString('pt-BR') : '-';
+                
+                let btnObs = `<button class="btn-note ${v.observacao?'has-obs':''}" data-id="${v.id}" data-num="${v.numero_volume}" data-obs="${v.observacao||''}" onclick="abrirObs(this)">${v.observacao?'<i class="bi bi-pencil-fill"></i>':'<i class="bi bi-pencil"></i>'}</button>`;
+                
+                let btnDesfazer = '-';
+                if (isRec) {
+                    btnDesfazer = `<button class="btn-undo-sm" onclick="desfazerRecebimentoDetalhes(${v.id})" title="Desfazer Recebimento"><i class="bi bi-arrow-counterclockwise"></i></button>`;
+                }
+
+                tr.innerHTML = `
+                    <td class="text-center fw-bold text-dark">${v.remetente}</td>
+                    <td class="text-center">${v.numero_volume}</td>
+                    <td class="text-center">${v.destinatario}</td>
+                    <td class="text-center">${btnObs}</td>
+                    <td class="text-center"><span class="badge bg-light text-dark border">${v.quantidade_recebida}/${v.quantidade_expedida}</span></td>
+                    <td class="text-center small text-muted">${dataRec}</td>
+                    <td class="text-center small fw-bold">${v.usuario_recepcao || '-'}</td>
+                    <td class="text-center">${isRec ? '<span class="badge bg-success">Recebido</span>' : '<span class="badge bg-secondary">Pendente</span>'}</td>
+                    <td class="text-center">${btnDesfazer}</td>
+                `;
+                corpo.appendChild(tr);
+            });
+        } catch(e) { corpo.innerHTML = '<tr><td colspan="9" class="text-danger text-center">Erro ao carregar.</td></tr>'; }
+    }
+</script>
+{% endblock %}

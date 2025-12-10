@@ -1,0 +1,8 @@
+Flask
+Flask-Login
+werkzeug
+gspread
+oauth2client
+pdfplumber
+python-dateutil
+python-dotenv
