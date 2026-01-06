@@ -88,6 +88,20 @@ def init_database():
 
     cursor.execute("CREATE TABLE IF NOT EXISTS caixas_individuais (id INTEGER PRIMARY KEY AUTOINCREMENT, volume_id INTEGER NOT NULL, numero_caixa INTEGER NOT NULL, status TEXT DEFAULT 'NÃO RECEBIDA', data_hora_recepcao DATETIME, usuario_conferente TEXT, FOREIGN KEY (volume_id) REFERENCES volumes(id), UNIQUE(volume_id, numero_caixa))")
     cursor.execute("CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, manifesto_id INTEGER, acao TEXT NOT NULL, detalhes TEXT, usuario TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (manifesto_id) REFERENCES manifestos(id))")
+    
+    # Tabela Histórico de Edições Extramanifesto
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS historico_edicoes_extra (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            volume_id INTEGER NOT NULL,
+            usuario TEXT NOT NULL,
+            campo_alterado TEXT NOT NULL,
+            valor_anterior TEXT,
+            valor_novo TEXT,
+            data_hora DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (volume_id) REFERENCES volumes(id)
+        )
+    """)
 
     conn.commit()
     conn.close()
@@ -467,3 +481,134 @@ def obter_estatisticas_manifesto(manifesto_id):
 
 def listar_remetentes_manifesto(manifesto_id):
     return []
+
+# --- FUNÇÕES DE EDIÇÃO DE EXTRAMANIFESTO ---
+
+def obter_volume_por_id(volume_id):
+    """Retorna todos os dados de um volume específico"""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM volumes WHERE id = ?", (volume_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+def atualizar_volume_extra(volume_id, numero_volume, remetente, quantidade, usuario):
+    """Atualiza dados de volume EXTRA e retorna lista de alterações"""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        
+        # Buscar dados atuais
+        cursor.execute("SELECT * FROM volumes WHERE id = ?", (volume_id,))
+        volume_atual = dict(cursor.fetchone())
+        
+        # Verificar se é EXTRA
+        if volume_atual.get('prioridade') != 'EXTRA':
+            return (False, [])
+        
+        alteracoes = []
+        
+        # Comparar e registrar alterações
+        if str(volume_atual['numero_volume']) != str(numero_volume):
+            alteracoes.append({
+                'campo': 'numero_volume',
+                'valor_anterior': str(volume_atual['numero_volume']),
+                'valor_novo': str(numero_volume)
+            })
+        
+        if str(volume_atual['remetente']) != str(remetente):
+            alteracoes.append({
+                'campo': 'remetente',
+                'valor_anterior': str(volume_atual['remetente']),
+                'valor_novo': str(remetente)
+            })
+        
+        qtd_anterior = volume_atual['quantidade_expedida']
+        if qtd_anterior != quantidade:
+            alteracoes.append({
+                'campo': 'quantidade_expedida',
+                'valor_anterior': str(qtd_anterior),
+                'valor_novo': str(quantidade)
+            })
+        
+        # Se não há alterações, retornar
+        if not alteracoes:
+            return (True, [])
+        
+        # Atualizar volume
+        cursor.execute("""
+            UPDATE volumes 
+            SET numero_volume = ?, remetente = ?, quantidade_expedida = ?
+            WHERE id = ?
+        """, (numero_volume, remetente, quantidade, volume_id))
+        
+        # Ajustar caixas se quantidade mudou
+        if qtd_anterior != quantidade:
+            if quantidade > qtd_anterior:
+                # Adicionar caixas
+                for i in range(qtd_anterior + 1, quantidade + 1):
+                    cursor.execute("""
+                        INSERT INTO caixas_individuais (volume_id, numero_caixa, status)
+                        VALUES (?, ?, 'NÃO RECEBIDA')
+                    """, (volume_id, i))
+            else:
+                # Remover caixas excedentes (priorizar não recebidas)
+                cursor.execute("""
+                    DELETE FROM caixas_individuais
+                    WHERE volume_id = ? AND numero_caixa > ?
+                    AND status = 'NÃO RECEBIDA'
+                """, (volume_id, quantidade))
+                
+                # Se ainda sobrou, remover qualquer uma
+                cursor.execute("""
+                    DELETE FROM caixas_individuais 
+                    WHERE volume_id = ? AND numero_caixa > ?
+                """, (volume_id, quantidade))
+            
+            # Recalcular status do volume
+            _recalcular_volume(cursor, volume_id, None, None)
+        
+        conn.commit()
+        
+        # Sincronizar com Sheets
+        _sincronizar_sheets(cursor, volume_id)
+        
+        return (True, alteracoes)
+    finally:
+        conn.close()
+
+def registrar_historico_edicao(volume_id, usuario, alteracoes):
+    """Registra múltiplas alterações no histórico"""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        agora = get_agora_br()
+        
+        for alt in alteracoes:
+            cursor.execute("""
+                INSERT INTO historico_edicoes_extra 
+                (volume_id, usuario, campo_alterado, valor_anterior, valor_novo, data_hora)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (volume_id, usuario, alt['campo'], alt['valor_anterior'], alt['valor_novo'], agora))
+        
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+def obter_historico_edicoes(volume_id):
+    """Retorna histórico completo de edições de um volume"""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT * FROM historico_edicoes_extra 
+            WHERE volume_id = ? 
+            ORDER BY data_hora DESC
+        """, (volume_id,))
+        return [dict(row) for row in cursor.fetchall()]
+    finally:
+        conn.close()

@@ -2,17 +2,69 @@
 
 {% block content %}
 <style>
-    .nav-tabs .nav-link { color: #64748b; font-weight: 600; border: none; }
-    .nav-tabs .nav-link.active { color: #2563eb; border-bottom: 2px solid #2563eb; background: transparent; }
-    .table-middle td { vertical-align: middle; }
-    .btn-action { border-radius: 6px; font-weight: 500; font-size: 0.8rem; padding: 0.3rem 0.6rem; gap: 4px; display: inline-flex; align-items: center; }
-    .btn-rec { background-color: #22c55e; color: white; border: none; }
-    .btn-del { background-color: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
-    .btn-view { background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
-    
+    .nav-tabs .nav-link {
+        color: #64748b;
+        font-weight: 600;
+        border: none;
+    }
+
+    .nav-tabs .nav-link.active {
+        color: #2563eb;
+        border-bottom: 2px solid #2563eb;
+        background: transparent;
+    }
+
+    .table-middle td {
+        vertical-align: middle;
+    }
+
+    .btn-action {
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 0.8rem;
+        padding: 0.3rem 0.6rem;
+        gap: 4px;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .btn-rec {
+        background-color: #22c55e;
+        color: white;
+        border: none;
+    }
+
+    .btn-del {
+        background-color: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+    }
+
+    .btn-view {
+        background-color: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+    }
+
     /* OBS Indicator */
-    .btn-note { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #cbd5e1; color: #94a3b8; background: white; display: flex; align-items: center; justify-content: center; }
-    .btn-note.has-obs { background-color: #fffbeb; color: #d97706; border-color: #fcd34d; font-weight: bold; }
+    .btn-note {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
+        color: #94a3b8;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-note.has-obs {
+        background-color: #fffbeb;
+        color: #d97706;
+        border-color: #fcd34d;
+        font-weight: bold;
+    }
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -20,8 +72,10 @@
 </div>
 
 <ul class="nav nav-tabs mb-4" id="buscaTabs" role="tablist">
-    <li class="nav-item"><button class="nav-link active" id="tab-manifestos" data-bs-toggle="tab" data-bs-target="#content-manifestos">📄 Buscar Manifestos</button></li>
-    <li class="nav-item"><button class="nav-link" id="tab-volumes" data-bs-toggle="tab" data-bs-target="#content-volumes">📦 Buscar Volumes</button></li>
+    <li class="nav-item"><button class="nav-link active" id="tab-manifestos" data-bs-toggle="tab"
+            data-bs-target="#content-manifestos">📄 Buscar Manifestos</button></li>
+    <li class="nav-item"><button class="nav-link" id="tab-volumes" data-bs-toggle="tab"
+            data-bs-target="#content-volumes">📦 Buscar Volumes</button></li>
 </ul>
 
 <div class="tab-content">
@@ -30,9 +84,12 @@
         <div class="card shadow-sm border-0 rounded-4 mb-4">
             <div class="card-body bg-light rounded-4">
                 <div class="row g-3">
-                    <div class="col-md-3"><label class="form-label small fw-bold text-muted">Número</label><input type="text" class="form-control" id="filtroManNumero"></div>
-                    <div class="col-md-2"><label class="form-label small fw-bold text-muted">De</label><input type="date" class="form-control" id="filtroManDataIni"></div>
-                    <div class="col-md-2"><label class="form-label small fw-bold text-muted">Até</label><input type="date" class="form-control" id="filtroManDataFim"></div>
+                    <div class="col-md-3"><label class="form-label small fw-bold text-muted">Número</label><input
+                            type="text" class="form-control" id="filtroManNumero"></div>
+                    <div class="col-md-2"><label class="form-label small fw-bold text-muted">De</label><input
+                            type="date" class="form-control" id="filtroManDataIni"></div>
+                    <div class="col-md-2"><label class="form-label small fw-bold text-muted">Até</label><input
+                            type="date" class="form-control" id="filtroManDataFim"></div>
                     <div class="col-md-3">
                         <label class="form-label small fw-bold text-muted">Status</label>
                         <select class="form-select" id="filtroManStatus">
@@ -42,12 +99,32 @@
                             <option value="NÃO RECEBIDO">Não Rec.</option>
                         </select>
                     </div>
-                    <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100 fw-bold shadow-sm" onclick="buscarManifestos()">Buscar</button></div>
+                    <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100 fw-bold shadow-sm"
+                            onclick="buscarManifestos()">Buscar</button></div>
                 </div>
             </div>
         </div>
         <div class="card shadow-sm border-0 rounded-4">
-            <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0 table-middle"><thead class="bg-light text-muted small text-uppercase"><tr><th class="ps-4">Manifesto</th><th>Data</th><th>Volumes</th><th>Caixas</th><th>Ações</th></tr></thead><tbody id="tabelaManifestosBody"><tr><td colspan="5" class="text-center py-5 text-muted">Use os filtros.</td></tr></tbody></table></div></div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 table-middle">
+                        <thead class="bg-light text-muted small text-uppercase">
+                            <tr>
+                                <th class="ps-4">Manifesto</th>
+                                <th>Data</th>
+                                <th>Volumes</th>
+                                <th>Caixas</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaManifestosBody">
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">Use os filtros.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -56,38 +133,136 @@
         <div class="card shadow-sm border-0 rounded-4 mb-4">
             <div class="card-body bg-light rounded-4">
                 <div class="row g-3 align-items-center">
-                    <div class="col-md-10"><label class="form-label small fw-bold text-muted">N° Volume</label><input type="text" class="form-control form-control-lg" id="filtroVolNumero" onkeyup="verificarBuscaAuto()"><div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="checkBuscaAuto" checked><label class="form-check-label small text-muted">Busca automática</label></div></div>
-                    <div class="col-md-2 align-self-start mt-4"><button class="btn btn-success w-100 btn-lg fw-bold shadow-sm" onclick="buscarVolumes()">Buscar</button></div>
+                    <div class="col-md-10"><label class="form-label small fw-bold text-muted">N° Volume</label><input
+                            type="text" class="form-control form-control-lg" id="filtroVolNumero"
+                            onkeyup="verificarBuscaAuto()">
+                        <div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="checkBuscaAuto"
+                                checked><label class="form-check-label small text-muted">Busca automática</label></div>
+                    </div>
+                    <div class="col-md-2 align-self-start mt-4"><button
+                            class="btn btn-success w-100 btn-lg fw-bold shadow-sm"
+                            onclick="buscarVolumes()">Buscar</button></div>
                 </div>
             </div>
         </div>
         <div class="card shadow-sm border-0 rounded-4">
-            <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0 table-middle"><thead class="bg-light text-muted small text-uppercase"><tr><th class="ps-4">Volume</th><th>Remetente</th><th>Obs</th><th>Manifesto</th><th>Caixas</th><th>Status</th><th>Por</th><th>Em</th><th>Ações</th></tr></thead><tbody id="tabelaVolumesBody"><tr><td colspan="9" class="text-center py-5 text-muted">Digite para buscar.</td></tr></tbody></table></div></div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 table-middle">
+                        <thead class="bg-light text-muted small text-uppercase">
+                            <tr>
+                                <th class="ps-4">Volume</th>
+                                <th>Remetente</th>
+                                <th>Obs</th>
+                                <th>Manifesto</th>
+                                <th>Caixas</th>
+                                <th>Status</th>
+                                <th>Por</th>
+                                <th>Em</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaVolumesBody">
+                            <tr>
+                                <td colspan="9" class="text-center py-5 text-muted">Digite para buscar.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- MODAL DETALHES -->
-<div class="modal fade" id="modalDetalhes" tabindex="-1"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content rounded-3 border-0"><div class="modal-header border-bottom-0"><h5 class="modal-title fw-bold">📋 Detalhes <span id="tituloDetalhes" class="text-primary"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-0"><div class="table-responsive"><table class="table table-striped mb-0 small align-middle"><thead class="table-light text-center"><tr><th>Remetente</th><th>Volume</th><th>Destino</th><th>Obs</th><th>Peso/Cub</th><th>Material</th><th>Caixas</th><th>Em</th><th>Por</th><th>Status</th><th>Ação</th></tr></thead><tbody id="corpoDetalhes"></tbody></table></div></div></div></div></div>
+<div class="modal fade" id="modalDetalhes" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content rounded-3 border-0">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold">📋 Detalhes <span id="tituloDetalhes" class="text-primary"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped mb-0 small align-middle">
+                        <thead class="table-light text-center">
+                            <tr>
+                                <th>Remetente</th>
+                                <th>Volume</th>
+                                <th>Destino</th>
+                                <th>Obs</th>
+                                <th>Peso/Cub</th>
+                                <th>Material</th>
+                                <th>Caixas</th>
+                                <th>Em</th>
+                                <th>Por</th>
+                                <th>Status</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoDetalhes"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- MODAL OBS -->
-<div class="modal fade" id="modalObs" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-3 border-0"><div class="modal-header border-bottom-0"><h5 class="modal-title">📝 Observação</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="obsVolId"><p class="small text-muted" id="obsVolTitulo"></p><textarea id="obsTexto" class="form-control" rows="4"></textarea></div><div class="modal-footer border-0"><button class="btn btn-light btn-action" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-go btn-action" onclick="salvarObs()">Salvar</button></div></div></div></div>
+<div class="modal fade" id="modalObs" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-3 border-0">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title">📝 Observação</h5><button type="button" class="btn-close"
+                    data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body"><input type="hidden" id="obsVolId">
+                <p class="small text-muted" id="obsVolTitulo"></p><textarea id="obsTexto" class="form-control"
+                    rows="4"></textarea>
+            </div>
+            <div class="modal-footer border-0"><button class="btn btn-light btn-action"
+                    data-bs-dismiss="modal">Cancelar</button><button class="btn btn-go btn-action"
+                    onclick="salvarObs()">Salvar</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CAIXAS -->
+<div class="modal fade" id="modalCaixasBusca" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div id="modalCaixasHeader" class="modal-header bg-success text-white border-bottom-0">
+                <div>
+                    <h5 class="modal-title fw-bold" id="modalCaixasTitulo"></h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="listaCaixasBuscaContainer" class="list-group list-group-flush"></div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button class="btn btn-secondary btn-rounded" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
-    let modalDetalhes, modalObs;
-    document.addEventListener("DOMContentLoaded", function() {
+    let modalDetalhes, modalObs, modalCaixasBusca;
+    document.addEventListener("DOMContentLoaded", function () {
         modalDetalhes = new bootstrap.Modal(document.getElementById('modalDetalhes'));
         modalObs = new bootstrap.Modal(document.getElementById('modalObs'));
+        modalCaixasBusca = new bootstrap.Modal(document.getElementById('modalCaixasBusca'));
     });
 
     // Abrir OBS (Corrigido para usar dataset)
-    function abrirObs(btn) { 
+    function abrirObs(btn) {
         document.getElementById('obsVolId').value = btn.dataset.id;
         document.getElementById('obsVolTitulo').innerText = btn.dataset.num;
         document.getElementById('obsTexto').value = btn.dataset.obs;
-        modalObs.show(); 
+        modalObs.show();
     }
-    async function salvarObs() { const id=document.getElementById('obsVolId').value; const txt=document.getElementById('obsTexto').value; await fetch('/api/observacao',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:id,texto:txt})}); modalObs.hide(); if(document.getElementById('tab-manifestos').classList.contains('active')) alert("Salvo!"); else buscarVolumes(); }
+    async function salvarObs() { const id = document.getElementById('obsVolId').value; const txt = document.getElementById('obsTexto').value; await fetch('/api/observacao', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ volume_id: id, texto: txt }) }); modalObs.hide(); if (document.getElementById('tab-manifestos').classList.contains('active')) alert("Salvo!"); else buscarVolumes(); }
 
     // Busca Manifestos
     async function buscarManifestos() {
@@ -95,46 +270,60 @@
         corpo.innerHTML = '<tr><td colspan="5" class="text-center py-4"><div class="spinner-border"></div></td></tr>';
         const payload = { numero: document.getElementById('filtroManNumero').value, data_ini: document.getElementById('filtroManDataIni').value, data_fim: document.getElementById('filtroManDataFim').value, status: document.getElementById('filtroManStatus').value };
         try {
-            const res = await fetch('/api/busca/manifestos', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+            const res = await fetch('/api/busca/manifestos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             const dados = await res.json();
             corpo.innerHTML = '';
-            if(dados.length===0){ corpo.innerHTML='<tr><td colspan="5" class="text-center text-muted">Nada encontrado.</td></tr>'; return; }
+            if (dados.length === 0) { corpo.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nada encontrado.</td></tr>'; return; }
             dados.forEach(m => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td class="ps-4 fw-bold text-primary">${m.numero_manifesto}</td><td>${m.data_manifesto||'-'}</td><td class="text-center">${m.total_volumes}</td><td class="text-center">${m.total_caixas_recebidas||0}/${m.total_caixas_expedidas||0}</td><td class="text-center"><div class="d-flex justify-content-center gap-2"><button class="btn btn-action btn-view" onclick="abrirDetalhes(${m.id},'${m.numero_manifesto}')"><i class="bi bi-eye"></i></button><a href="/conferencia/${m.id}" class="btn btn-action btn-go"><i class="bi bi-clipboard-check"></i></a></div></td>`;
+                tr.innerHTML = `<td class="ps-4 fw-bold text-primary">${m.numero_manifesto}</td><td>${m.data_manifesto || '-'}</td><td class="text-center">${m.total_volumes}</td><td class="text-center">${m.total_caixas_recebidas || 0}/${m.total_caixas_expedidas || 0}</td><td class="text-center"><div class="d-flex justify-content-center gap-2"><button class="btn btn-action btn-view" onclick="abrirDetalhes(${m.id},'${m.numero_manifesto}')"><i class="bi bi-eye"></i></button><a href="/conferencia/${m.id}" class="btn btn-action btn-go" onclick="return confirm('Iniciar conferência do manifesto ${m.numero_manifesto}?')"><i class="bi bi-clipboard-check"></i> Conferir</a></div></td>`;
                 corpo.appendChild(tr);
             });
-        } catch(e){ corpo.innerHTML='<tr><td colspan="5" class="text-danger text-center">Erro.</td></tr>'; }
+        } catch (e) { corpo.innerHTML = '<tr><td colspan="5" class="text-danger text-center">Erro.</td></tr>'; }
     }
 
     // Busca Volumes
     let timeoutBusca = null;
-    function verificarBuscaAuto() { if(document.getElementById('checkBuscaAuto').checked){ clearTimeout(timeoutBusca); timeoutBusca=setTimeout(buscarVolumes,500); } }
+    function verificarBuscaAuto() { if (document.getElementById('checkBuscaAuto').checked) { clearTimeout(timeoutBusca); timeoutBusca = setTimeout(buscarVolumes, 500); } }
 
     async function buscarVolumes() {
         const termo = document.getElementById('filtroVolNumero').value.trim();
         const corpo = document.getElementById('tabelaVolumesBody');
-        if(termo.length<3){ if(termo.length===0) corpo.innerHTML='<tr><td colspan="9" class="text-center text-muted">Digite...</td></tr>'; return; }
-        corpo.innerHTML='<tr><td colspan="9" class="text-center py-4"><div class="spinner-border"></div></td></tr>';
+        if (termo.length < 3) { if (termo.length === 0) corpo.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Digite...</td></tr>'; return; }
+        corpo.innerHTML = '<tr><td colspan="9" class="text-center py-4"><div class="spinner-border"></div></td></tr>';
         try {
-            const res = await fetch('/api/busca/volumes', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({termo: termo}) });
+            const res = await fetch('/api/busca/volumes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ termo: termo }) });
             const dados = await res.json();
             corpo.innerHTML = '';
-            if(dados.length===0){ corpo.innerHTML='<tr><td colspan="9" class="text-center text-muted">Nada encontrado.</td></tr>'; return; }
+            if (dados.length === 0) { corpo.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Nada encontrado.</td></tr>'; return; }
             dados.forEach(v => {
                 const tr = document.createElement('tr');
                 const isRec = v.status === 'COMPLETO';
-                
+
                 // Botão OBS com indicador
-                let btnObs = `<button class="btn-note ${v.observacao?'has-obs':''}" data-id="${v.id}" data-num="${v.numero_volume}" data-obs="${v.observacao||''}" onclick="abrirObs(this)">${v.observacao?'<i class="bi bi-pencil-fill"></i>':'<i class="bi bi-pencil"></i>'}</button>`;
-                
-                let botoes = isRec ? `<button class="btn btn-action btn-del" onclick="desfazerVolumeBusca(${v.id})"><i class="bi bi-arrow-counterclockwise"></i></button>` : `<button class="btn btn-action btn-rec" onclick="receberVolumeRapido(${v.id},'${v.numero_volume}')"><i class="bi bi-box-seam"></i></button>`;
+                let btnObs = `<button class="btn-note ${v.observacao ? 'has-obs' : ''}" data-id="${v.id}" data-num="${v.numero_volume}" data-obs="${v.observacao || ''}" onclick="abrirObs(this)">${v.observacao ? '<i class="bi bi-pencil-fill"></i>' : '<i class="bi bi-pencil"></i>'}</button>`;
+
+                // Lógica de botões de ação
+                let botoes = '';
+                if (isRec) {
+                    // Volume totalmente recebido: botão Desfazer
+                    botoes = `<button class="btn btn-action btn-del" onclick="desfazerVolumeBusca(${v.id})"><i class="bi bi-arrow-counterclockwise"></i></button>`;
+                } else {
+                    // Volume não recebido
+                    if (v.quantidade_expedida > 1) {
+                        // Múltiplas caixas: botão para abrir modal
+                        botoes = `<button class="btn btn-action btn-rec" onclick="abrirModalCaixasBusca(${v.id}, '${v.numero_volume}')"><i class="bi bi-boxes"></i> Caixas</button>`;
+                    } else {
+                        // Caixa única: recebimento direto
+                        botoes = `<button class="btn btn-action btn-rec" onclick="receberVolumeRapido(${v.id},'${v.numero_volume}')"><i class="bi bi-box-seam"></i></button>`;
+                    }
+                }
                 botoes += ` <button class="btn btn-action btn-view" onclick="abrirDetalhes(${v.manifesto_id}, '${v.numero_manifesto}')"><i class="bi bi-eye"></i></button>`;
 
-                tr.innerHTML = `<td class="ps-4 fw-bold text-dark">${v.numero_volume}</td><td>${v.remetente}</td><td class="text-center">${btnObs}</td><td class="text-primary">${v.numero_manifesto}</td><td class="text-center">${v.quantidade_recebida}/${v.quantidade_expedida}</td><td class="text-center">${isRec?'<i class="bi bi-check-circle-fill text-success"></i>':'<i class="bi bi-circle text-muted"></i>'}</td><td>${v.usuario_recepcao||'-'}</td><td>${v.data_hora_ultima_recepcao||'-'}</td><td class="text-center d-flex justify-content-center gap-2">${botoes}</td>`;
+                tr.innerHTML = `<td class="ps-4 fw-bold text-dark">${v.numero_volume}</td><td>${v.remetente}</td><td class="text-center">${btnObs}</td><td class="text-primary">${v.numero_manifesto}</td><td class="text-center">${v.quantidade_recebida}/${v.quantidade_expedida}</td><td class="text-center">${isRec ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-circle text-muted"></i>'}</td><td>${v.usuario_recepcao || '-'}</td><td>${v.data_hora_ultima_recepcao || '-'}</td><td class="text-center d-flex justify-content-center gap-2">${botoes}</td>`;
                 corpo.appendChild(tr);
             });
-        } catch(e){ corpo.innerHTML='<tr><td colspan="9" class="text-danger">Erro.</td></tr>'; }
+        } catch (e) { corpo.innerHTML = '<tr><td colspan="9" class="text-danger">Erro.</td></tr>'; }
     }
 
     // Detalhes Global
@@ -151,18 +340,49 @@
                 const tr = document.createElement('tr');
                 tr.classList.add('align-middle');
                 const isRec = v.status === 'COMPLETO' || v.status === 'TOTALMENTE RECEBIDO';
-                
-                let btnObs = `<button class="btn-note ${v.observacao?'has-obs':''}" data-id="${v.id}" data-num="${v.numero_volume}" data-obs="${v.observacao||''}" onclick="abrirObs(this)">${v.observacao?'<i class="bi bi-pencil-fill"></i>':'<i class="bi bi-pencil"></i>'}</button>`;
+
+                let btnObs = `<button class="btn-note ${v.observacao ? 'has-obs' : ''}" data-id="${v.id}" data-num="${v.numero_volume}" data-obs="${v.observacao || ''}" onclick="abrirObs(this)">${v.observacao ? '<i class="bi bi-pencil-fill"></i>' : '<i class="bi bi-pencil"></i>'}</button>`;
                 let btnDesfazer = isRec ? `<button class="btn btn-sm text-danger border-0" onclick="desfazerRecebimentoDetalhes(${v.id})"><i class="bi bi-arrow-counterclockwise"></i></button>` : '-';
 
-                tr.innerHTML = `<td class="fw-bold">${v.remetente}</td><td>${v.numero_volume}</td><td>${v.destinatario}</td><td class="text-center">${btnObs}</td><td>${v.peso_total}</td><td>${v.tipo_material}</td><td>${v.quantidade_recebida}/${v.quantidade_expedida}</td><td>${v.data_hora_ultima_recepcao||'-'}</td><td style="white-space:nowrap;">${v.usuario_recepcao||'-'}</td><td>${v.status}</td><td class="text-center">${btnDesfazer}</td>`;
+                tr.innerHTML = `<td class="fw-bold">${v.remetente}</td><td>${v.numero_volume}</td><td>${v.destinatario}</td><td class="text-center">${btnObs}</td><td>${v.peso_total}</td><td>${v.tipo_material}</td><td>${v.quantidade_recebida}/${v.quantidade_expedida}</td><td>${v.data_hora_ultima_recepcao || '-'}</td><td style="white-space:nowrap;">${v.usuario_recepcao || '-'}</td><td>${v.status}</td><td class="text-center">${btnDesfazer}</td>`;
                 corpo.appendChild(tr);
             });
-        } catch(e){ corpo.innerHTML='Erro ao carregar detalhes.'; }
+        } catch (e) { corpo.innerHTML = 'Erro ao carregar detalhes.'; }
     }
 
-    async function receberVolumeRapido(vid, vnum){ if(!confirm("Receber?"))return; await fetch('/api/receber_rapido_volume',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:vid})}); buscarVolumes(); }
-    async function desfazerVolumeBusca(vid){ const s=prompt("Senha Admin:"); if(s!=="pitaco" && s!=="admin123")return alert("Errado"); await fetch('/api/desfazer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:vid})}); buscarVolumes(); }
-    async function desfazerRecebimentoDetalhes(vid){ const s=prompt("Senha Admin:"); if(s!=="pitaco" && s!=="admin123")return alert("Errado"); await fetch('/api/desfazer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:vid})}); alert("Desfeito"); const modal=bootstrap.Modal.getInstance(document.getElementById('modalDetalhes')); modal.hide(); }
+    async function receberVolumeRapido(vid, vnum) { if (!confirm("Receber?")) return; await fetch('/api/receber_rapido_volume', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ volume_id: vid }) }); buscarVolumes(); }
+    async function desfazerVolumeBusca(vid) { const s = prompt("Senha Admin:"); if (s !== "pitaco" && s !== "admin123") return alert("Errado"); await fetch('/api/desfazer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ volume_id: vid }) }); buscarVolumes(); }
+    async function desfazerRecebimentoDetalhes(vid) { const s = prompt("Senha Admin:"); if (s !== "pitaco" && s !== "admin123") return alert("Errado"); await fetch('/api/desfazer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ volume_id: vid }) }); alert("Desfeito"); const modal = bootstrap.Modal.getInstance(document.getElementById('modalDetalhes')); modal.hide(); }
+
+    // MODAL DE CAIXAS NA BUSCA
+    async function abrirModalCaixasBusca(vid, num) {
+        document.getElementById('modalCaixasTitulo').innerText = "Receber Caixas - " + num;
+        const container = document.getElementById('listaCaixasBuscaContainer');
+        container.innerHTML = '<div class="text-center py-3"><div class="spinner-border"></div></div>';
+        modalCaixasBusca.show();
+
+        // Buscar caixas do volume
+        const res = await fetch('/api/obter_caixas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ volume_id: vid }) });
+        const caixas = await res.json();
+
+        container.innerHTML = '';
+        caixas.forEach(cx => {
+            const isRec = cx.status === 'RECEBIDA';
+            const enabled = !isRec;
+            const label = document.createElement('label');
+            label.className = `list-group-item d-flex gap-3 py-3 ${enabled ? 'list-group-item-action pointer' : 'bg-light text-muted'}`;
+            label.innerHTML = `<input class="form-check-input" type="checkbox" ${!enabled ? 'disabled checked' : ''} onchange="acaoCaixaBusca(${vid}, ${cx.numero_caixa}, this)"><span>Caixa ${cx.numero_caixa}</span>`;
+            container.appendChild(label);
+        });
+    }
+
+    async function acaoCaixaBusca(vid, numeroCaixa, checkbox) {
+        checkbox.disabled = true;
+        const endpoint = checkbox.checked ? '/api/receber_caixa' : '/api/desfazer_caixa';
+        const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ volume_id: vid, numero_caixa: numeroCaixa }) });
+        if (res.ok) {
+            document.getElementById('modalCaixasBusca').addEventListener('hidden.bs.modal', () => buscarVolumes(), { once: true });
+        }
+    }
 </script>
 {% endblock %}

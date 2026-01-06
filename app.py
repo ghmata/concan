@@ -37,7 +37,11 @@ from database import (
     atualizar_senha,            # Vírgula aqui
     excluir_usuario_db,         # Vírgula aqui
     verificar_senha_atual_db,   # Vírgula aqui
-    criar_usuario
+    criar_usuario,
+    obter_volume_por_id,
+    atualizar_volume_extra,
+    registrar_historico_edicao,
+    obter_historico_edicoes
 )
 from pdf_extractor import extrair_manifesto_pdf
 
@@ -369,6 +373,53 @@ def api_observacao():
     if salvar_observacao(data['volume_id'], data['texto']):
         return jsonify({'status': 'ok'})
     return jsonify({'status': 'erro'}), 500
+
+# --- ROTAS DE EDIÇÃO DE EXTRAMANIFESTO ---
+
+@app.route('/api/volume/<int:volume_id>', methods=['GET'])
+@login_required
+def api_obter_volume(volume_id):
+    """Retorna dados completos de um volume específico"""
+    volume = obter_volume_por_id(volume_id)
+    if volume:
+        return jsonify(volume)
+    return jsonify({'status': 'erro', 'msg': 'Volume não encontrado'}), 404
+
+@app.route('/api/atualizar_extra/<int:volume_id>', methods=['PUT'])
+@login_required
+def api_atualizar_extra(volume_id):
+    """Atualiza dados de um volume extramanifesto com validação de senha"""
+    data = request.json
+    
+    # Validar senha
+    senha = data.get('senha', '')
+    if senha != 'pitaco':
+        return jsonify({'status': 'erro', 'msg': 'Senha incorreta'}), 403
+    
+    # Atualizar volume
+    sucesso, alteracoes = atualizar_volume_extra(
+        volume_id,
+        data.get('numero_volume'),
+        data.get('remetente'),
+        int(data.get('quantidade', 1)),
+        current_user.nome
+    )
+    
+    if not sucesso:
+        return jsonify({'status': 'erro', 'msg': 'Apenas volumes EXTRA podem ser editados'}), 400
+    
+    # Registrar histórico se houve alterações
+    if alteracoes:
+        registrar_historico_edicao(volume_id, current_user.nome, alteracoes)
+    
+    return jsonify({'status': 'ok', 'alteracoes': len(alteracoes)})
+
+@app.route('/api/historico_extra/<int:volume_id>', methods=['GET'])
+@login_required
+def api_historico_extra(volume_id):
+    """Retorna histórico de edições de um volume extramanifesto"""
+    historico = obter_historico_edicoes(volume_id)
+    return jsonify(historico)
 
 # Importação para garantir que o sync rode se necessário ao iniciar
 try:
