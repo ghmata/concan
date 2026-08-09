@@ -48,15 +48,29 @@ class TestBase(unittest.TestCase):
     """Base class que recria o banco antes de cada teste."""
 
     def setUp(self):
-        if TEST_DB.exists():
-            TEST_DB.unlink()
         init_database()
+        conn = get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM logs")
+            cursor.execute("DELETE FROM caixas_individuais")
+            cursor.execute("DELETE FROM volumes")
+            cursor.execute("DELETE FROM manifestos")
+            cursor.execute("DELETE FROM users")
+            cursor.execute("DELETE FROM volume_observacoes")
+            cursor.execute("DELETE FROM historico_edicoes_extra")
+            cursor.execute("DELETE FROM sqlite_sequence")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass
+        finally:
+            conn.close()
+
         # Criar manifesto de teste
         self.mid = criar_manifesto("MAN-TEST-001", "09/07/2026", "ORIG", "DEST", "M001", "A001", None)
 
     def tearDown(self):
-        if TEST_DB.exists():
-            TEST_DB.unlink()
+        pass
 
     def _criar_volume(self, qtd_caixas=4, num="VOL-001"):
         return adicionar_volume(self.mid, "REMETENTE_A", "DEST_A", num, qtd_caixas)

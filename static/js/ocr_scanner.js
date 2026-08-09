@@ -41,63 +41,45 @@ document.getElementById('btnSalvarManifesto').addEventListener('click', validarE
 document.getElementById('btnConfirmarSalvar').addEventListener('click', enviarDadosManifesto);
 
 /**
- * Inicializa o Tesseract Worker (Lazy Load com timeout e status detalhado)
+ * Inicializa o Tesseract Worker (Lazy Load) com timeout e feedback detalhado
  */
 async function obterWorker() {
     if (tesseractWorker) return tesseractWorker;
-
-    if (typeof Tesseract === 'undefined') {
-        throw new Error("Biblioteca Tesseract OCR não carregada no navegador. Verifique a conexão com a internet.");
-    }
     
-    ocrStatusTxt.textContent = "Iniciando motor OCR...";
+    ocrStatusTxt.textContent = "Carregando motor OCR...";
     ocrLoading.classList.remove('d-none');
-    progressContainer.classList.remove('d-none');
-    progressBar.style.width = '5%';
-    progressPercent.textContent = '5%';
     
-    // Timeout de 40 segundos para evitar carregamento infinito
-    const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-            reject(new Error("Tempo limite excedido (40s) ao baixar o motor OCR. Verifique sua conexão."));
-        }, 40000);
+    const workerPromise = Tesseract.createWorker('por', 1, {
+        logger: m => {
+            if (!m) return;
+            if (m.status === 'loading tesseract core') {
+                ocrStatusTxt.textContent = "Carregando motor OCR...";
+            } else if (m.status === 'loading language traineddata') {
+                const prog = Math.round((m.progress || 0) * 100);
+                ocrStatusTxt.textContent = `Baixando modelo de texto (${prog}%)...`;
+            } else if (m.status === 'initializing api') {
+                ocrStatusTxt.textContent = "Preparando reconhecedor...";
+            } else if (m.status === 'recognizing text') {
+                const progresso = Math.round((m.progress || 0) * 100);
+                progressBar.style.width = `${progresso}%`;
+                progressPercent.textContent = `${progresso}%`;
+                ocrStatusTxt.textContent = `Lendo texto: ${progresso}%`;
+            }
+        }
     });
 
-    const createPromise = (async () => {
-        const worker = await Tesseract.createWorker('por', 1, {
-            logger: m => {
-                if (m.status === 'loading tesseract core') {
-                    ocrStatusTxt.textContent = "Baixando motor OCR (WASM)...";
-                    progressBar.style.width = '20%';
-                    progressPercent.textContent = '20%';
-                } else if (m.status === 'loading language traineddata') {
-                    const p = Math.round((m.progress || 0) * 100);
-                    const pct = Math.min(20 + Math.round(p * 0.5), 70);
-                    progressBar.style.width = `${pct}%`;
-                    progressPercent.textContent = `${pct}%`;
-                    ocrStatusTxt.textContent = `Baixando dicionário PT-BR: ${p}%`;
-                } else if (m.status === 'initializing tesseract' || m.status === 'initializing api') {
-                    ocrStatusTxt.textContent = "Inicializando leitor OCR...";
-                    progressBar.style.width = '75%';
-                    progressPercent.textContent = '75%';
-                } else if (m.status === 'recognizing text') {
-                    const p = Math.round((m.progress || 0) * 100);
-                    const pct = Math.min(75 + Math.round(p * 0.25), 100);
-                    progressBar.style.width = `${pct}%`;
-                    progressPercent.textContent = `${pct}%`;
-                    ocrStatusTxt.textContent = `Lendo texto da imagem: ${p}%`;
-                }
-            }
-        });
-        return worker;
-    })();
+    const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Tempo limite excedido ao carregar motor OCR. Verifique sua conexão com a internet.")), 25000);
+    });
 
     try {
-        tesseractWorker = await Promise.race([createPromise, timeoutPromise]);
+        tesseractWorker = await Promise.race([workerPromise, timeoutPromise]);
         return tesseractWorker;
     } catch (err) {
-        tesseractWorker = null; // permite tentar novamente
+        tesseractWorker = null;
         throw err;
+    } finally {
+        ocrLoading.classList.add('d-none');
     }
 }
 
@@ -113,7 +95,7 @@ async function tratarUploadImagem(e) {
     progressContainer.classList.remove('d-none');
     progressBar.style.width = '0%';
     progressPercent.textContent = '0%';
-    ocrStatusTxt.textContent = "Otimizando imagem...";
+    ocrStatusTxt.textContent = "Processando imagem...";
 
     try {
         // 1. Comprimir Imagem no Cliente
@@ -131,8 +113,8 @@ async function tratarUploadImagem(e) {
         ocrLoading.classList.remove('d-none');
         
         const resultado = await worker.recognize(blobComprimido);
-        const texto = resultado.data.text || '';
-        const confianca = resultado.data.confidence || 0;
+        const texto = resultado.data.text;
+        const confianca = resultado.data.confidence;
         
         paginasTexto.push(texto);
         confiancaAcumulada += confianca;
@@ -141,15 +123,8 @@ async function tratarUploadImagem(e) {
         scanActions.classList.remove('d-none');
         btnCapturar.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i>Tirar Foto Novamente';
     } catch (err) {
-        console.error("Erro no processamento OCR:", err);
-        alert("⚠️ Não foi possível realizar a leitura OCR automática nesta tentativa:\n\n" + err.message + "\n\nVocê pode tirar a foto novamente ou prosseguir com os dados da imagem.");
-        
-        // Se a imagem foi comprimida e salva, permite prosseguir
-        if (paginasImagens.length > 0) {
-            paginasTexto.push(''); // insere texto vazio para manter índice
-            scanActions.classList.remove('d-none');
-            btnCapturar.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i>Tirar Foto Novamente';
-        }
+        alert("Erro ao processar OCR: " + err.message);
+        console.error(err);
     } finally {
         ocrLoading.classList.add('d-none');
         progressContainer.classList.add('d-none');
@@ -415,7 +390,7 @@ async function enviarDadosManifesto() {
     // Coleta Volumes
     const volumes = [];
     document.querySelectorAll('.vol-review-card').forEach(card => {
-        volumes.append({
+        volumes.push({
             numero_volume: card.querySelector('.val-num-vol').value.trim(),
             remetente: card.querySelector('.val-remetente').value,
             quantidade_expedida: parseInt(card.querySelector('.val-qtd').value) || 1,

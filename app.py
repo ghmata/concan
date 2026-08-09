@@ -302,7 +302,6 @@ def upload_file():
                     tipo_material=vol.get('tipo_material'),
                     embalagem=vol.get('embalagem')
                 )
-
             flash(f'Importado! {len(volumes)} volumes.', 'success')
             return redirect(url_for('index'))
         except Exception as e:
