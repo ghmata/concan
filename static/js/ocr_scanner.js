@@ -41,42 +41,64 @@ document.getElementById('btnSalvarManifesto').addEventListener('click', validarE
 document.getElementById('btnConfirmarSalvar').addEventListener('click', enviarDadosManifesto);
 
 /**
- * Inicializa o Tesseract Worker (Lazy Load)
+ * Inicializa o Tesseract Worker (Lazy Load com timeout e status detalhado)
  */
 async function obterWorker() {
     if (tesseractWorker) return tesseractWorker;
+
+    if (typeof Tesseract === 'undefined') {
+        throw new Error("Biblioteca Tesseract OCR não carregada no navegador. Verifique a conexão com a internet.");
+    }
     
     ocrStatusTxt.textContent = "Iniciando motor OCR...";
     ocrLoading.classList.remove('d-none');
+    progressContainer.classList.remove('d-none');
+    progressBar.style.width = '5%';
+    progressPercent.textContent = '5%';
     
-    try {
-        tesseractWorker = await Tesseract.createWorker('por', 1, {
-            langPath: 'https://cdn.jsdelivr.net/gh/naptha/tessdata@gh-pages/4.0.0_fast',
+    // Timeout de 40 segundos para evitar carregamento infinito
+    const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+            reject(new Error("Tempo limite excedido (40s) ao baixar o motor OCR. Verifique sua conexão."));
+        }, 40000);
+    });
+
+    const createPromise = (async () => {
+        const worker = await Tesseract.createWorker('por', 1, {
             logger: m => {
-                const progresso = Math.round((m.progress || 0) * 100);
-                progressBar.style.width = `${progresso}%`;
-                progressPercent.textContent = `${progresso}%`;
-                
                 if (m.status === 'loading tesseract core') {
-                    ocrStatusTxt.textContent = `Carregando motor OCR (${progresso}%)...`;
+                    ocrStatusTxt.textContent = "Baixando motor OCR (WASM)...";
+                    progressBar.style.width = '20%';
+                    progressPercent.textContent = '20%';
                 } else if (m.status === 'loading language traineddata') {
-                    ocrStatusTxt.textContent = `Baixando modelo de idioma (${progresso}%)...`;
-                } else if (m.status === 'initializing api') {
-                    ocrStatusTxt.textContent = `Inicializando reconhecedor...`;
+                    const p = Math.round((m.progress || 0) * 100);
+                    const pct = Math.min(20 + Math.round(p * 0.5), 70);
+                    progressBar.style.width = `${pct}%`;
+                    progressPercent.textContent = `${pct}%`;
+                    ocrStatusTxt.textContent = `Baixando dicionário PT-BR: ${p}%`;
+                } else if (m.status === 'initializing tesseract' || m.status === 'initializing api') {
+                    ocrStatusTxt.textContent = "Inicializando leitor OCR...";
+                    progressBar.style.width = '75%';
+                    progressPercent.textContent = '75%';
                 } else if (m.status === 'recognizing text') {
-                    ocrStatusTxt.textContent = `Reconhecendo texto (${progresso}%)...`;
-                } else {
-                    ocrStatusTxt.textContent = `${m.status}...`;
+                    const p = Math.round((m.progress || 0) * 100);
+                    const pct = Math.min(75 + Math.round(p * 0.25), 100);
+                    progressBar.style.width = `${pct}%`;
+                    progressPercent.textContent = `${pct}%`;
+                    ocrStatusTxt.textContent = `Lendo texto da imagem: ${p}%`;
                 }
             }
         });
+        return worker;
+    })();
+
+    try {
+        tesseractWorker = await Promise.race([createPromise, timeoutPromise]);
+        return tesseractWorker;
     } catch (err) {
-        tesseractWorker = null;
+        tesseractWorker = null; // permite tentar novamente
         throw err;
     }
-    
-    ocrLoading.classList.add('d-none');
-    return tesseractWorker;
 }
 
 /**
@@ -91,7 +113,7 @@ async function tratarUploadImagem(e) {
     progressContainer.classList.remove('d-none');
     progressBar.style.width = '0%';
     progressPercent.textContent = '0%';
-    ocrStatusTxt.textContent = "Processando imagem...";
+    ocrStatusTxt.textContent = "Otimizando imagem...";
 
     try {
         // 1. Comprimir Imagem no Cliente
@@ -109,8 +131,8 @@ async function tratarUploadImagem(e) {
         ocrLoading.classList.remove('d-none');
         
         const resultado = await worker.recognize(blobComprimido);
-        const texto = resultado.data.text;
-        const confianca = resultado.data.confidence;
+        const texto = resultado.data.text || '';
+        const confianca = resultado.data.confidence || 0;
         
         paginasTexto.push(texto);
         confiancaAcumulada += confianca;
@@ -119,8 +141,15 @@ async function tratarUploadImagem(e) {
         scanActions.classList.remove('d-none');
         btnCapturar.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i>Tirar Foto Novamente';
     } catch (err) {
-        alert("Erro ao processar OCR: " + err.message);
-        console.error(err);
+        console.error("Erro no processamento OCR:", err);
+        alert("⚠️ Não foi possível realizar a leitura OCR automática nesta tentativa:\n\n" + err.message + "\n\nVocê pode tirar a foto novamente ou prosseguir com os dados da imagem.");
+        
+        // Se a imagem foi comprimida e salva, permite prosseguir
+        if (paginasImagens.length > 0) {
+            paginasTexto.push(''); // insere texto vazio para manter índice
+            scanActions.classList.remove('d-none');
+            btnCapturar.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i>Tirar Foto Novamente';
+        }
     } finally {
         ocrLoading.classList.add('d-none');
         progressContainer.classList.add('d-none');
@@ -386,7 +415,7 @@ async function enviarDadosManifesto() {
     // Coleta Volumes
     const volumes = [];
     document.querySelectorAll('.vol-review-card').forEach(card => {
-        volumes.push({
+        volumes.append({
             numero_volume: card.querySelector('.val-num-vol').value.trim(),
             remetente: card.querySelector('.val-remetente').value,
             quantidade_expedida: parseInt(card.querySelector('.val-qtd').value) || 1,
