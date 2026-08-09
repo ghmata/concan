@@ -46,19 +46,34 @@ document.getElementById('btnConfirmarSalvar').addEventListener('click', enviarDa
 async function obterWorker() {
     if (tesseractWorker) return tesseractWorker;
     
-    ocrStatusTxt.textContent = "Carregando OCR Engine...";
+    ocrStatusTxt.textContent = "Iniciando motor OCR...";
     ocrLoading.classList.remove('d-none');
     
-    tesseractWorker = await Tesseract.createWorker('por+eng', 1, {
-        logger: m => {
-            if (m.status === 'recognizing text') {
-                const progresso = Math.round(m.progress * 100);
+    try {
+        tesseractWorker = await Tesseract.createWorker('por', 1, {
+            langPath: 'https://cdn.jsdelivr.net/gh/naptha/tessdata@gh-pages/4.0.0_fast',
+            logger: m => {
+                const progresso = Math.round((m.progress || 0) * 100);
                 progressBar.style.width = `${progresso}%`;
                 progressPercent.textContent = `${progresso}%`;
-                ocrStatusTxt.textContent = `Lendo texto: ${progresso}%`;
+                
+                if (m.status === 'loading tesseract core') {
+                    ocrStatusTxt.textContent = `Carregando motor OCR (${progresso}%)...`;
+                } else if (m.status === 'loading language traineddata') {
+                    ocrStatusTxt.textContent = `Baixando modelo de idioma (${progresso}%)...`;
+                } else if (m.status === 'initializing api') {
+                    ocrStatusTxt.textContent = `Inicializando reconhecedor...`;
+                } else if (m.status === 'recognizing text') {
+                    ocrStatusTxt.textContent = `Reconhecendo texto (${progresso}%)...`;
+                } else {
+                    ocrStatusTxt.textContent = `${m.status}...`;
+                }
             }
-        }
-    });
+        });
+    } catch (err) {
+        tesseractWorker = null;
+        throw err;
+    }
     
     ocrLoading.classList.add('d-none');
     return tesseractWorker;
@@ -371,7 +386,7 @@ async function enviarDadosManifesto() {
     // Coleta Volumes
     const volumes = [];
     document.querySelectorAll('.vol-review-card').forEach(card => {
-        volumes.append({
+        volumes.push({
             numero_volume: card.querySelector('.val-num-vol').value.trim(),
             remetente: card.querySelector('.val-remetente').value,
             quantidade_expedida: parseInt(card.querySelector('.val-qtd').value) || 1,
