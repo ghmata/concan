@@ -81,11 +81,21 @@ def init_database():
 
     cursor.execute("CREATE TABLE IF NOT EXISTS manifestos (id INTEGER PRIMARY KEY AUTOINCREMENT, numero_manifesto TEXT UNIQUE NOT NULL, data_manifesto DATE, terminal_origem TEXT, terminal_destino TEXT, missao TEXT, aeronave TEXT, pdf_path TEXT, status TEXT DEFAULT 'NÃO RECEBIDO', data_registro DATETIME DEFAULT CURRENT_TIMESTAMP, data_conferencia_inicio DATETIME, data_conferencia_fim DATETIME, usuario_responsavel TEXT)")
 
-    # Migração: Adiciona a coluna origem caso ela não exista no banco legado
-    try:
-        cursor.execute("ALTER TABLE manifestos ADD COLUMN origem TEXT DEFAULT 'PDF_DIGITAL'")
-    except sqlite3.OperationalError:
-        pass # A coluna já existe no banco
+    # Migrações automáticas de colunas legadas para retrocompatibilidade total
+    colunas_migracao = [
+        ("manifestos", "origem", "TEXT DEFAULT 'PDF_DIGITAL'"),
+        ("volumes", "observacao", "TEXT"),
+        ("volumes", "retirado_por", "TEXT"),
+        ("volumes", "motivo_nao_recebido", "TEXT"),
+        ("caixas_individuais", "retirado_por", "TEXT"),
+        ("caixas_individuais", "retirado_por_tipo", "TEXT"),
+        ("caixas_individuais", "motivo_nao_recebido", "TEXT"),
+    ]
+    for tabela, coluna, definicao in colunas_migracao:
+        try:
+            cursor.execute(f"ALTER TABLE {tabela} ADD COLUMN {coluna} {definicao}")
+        except sqlite3.OperationalError:
+            pass # A coluna já existe no banco
 
     # Tabela Volumes (Com campo observacao NOVO)
     cursor.execute("""
