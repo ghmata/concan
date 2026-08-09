@@ -186,6 +186,25 @@ def init_database():
         )
     """)
 
+    # Migração automática de observações legadas de volumes.observacao para volume_observacoes
+    try:
+        cursor.execute("SELECT id, observacao, data_hora_ultima_recepcao FROM volumes WHERE observacao IS NOT NULL AND TRIM(observacao) != ''")
+        volumes_legado = cursor.fetchall()
+        agora_br = get_agora_br()
+        for vol in volumes_legado:
+            vol_id = vol['id']
+            obs_texto = str(vol['observacao']).strip()
+            data_rec = vol['data_hora_ultima_recepcao'] or agora_br
+            
+            cursor.execute("SELECT 1 FROM volume_observacoes WHERE volume_id = ? AND texto = ?", (vol_id, obs_texto))
+            if not cursor.fetchone():
+                cursor.execute("""
+                    INSERT INTO volume_observacoes (volume_id, texto, usuario, timestamp)
+                    VALUES (?, ?, ?, ?)
+                """, (vol_id, obs_texto, 'Legado', data_rec))
+    except Exception as e:
+        print(f"Aviso na migração de observações legado: {e}")
+
     conn.commit()
     conn.close()
 
