@@ -41,7 +41,7 @@ document.getElementById('btnSalvarManifesto').addEventListener('click', validarE
 document.getElementById('btnConfirmarSalvar').addEventListener('click', enviarDadosManifesto);
 
 /**
- * Inicializa o Tesseract Worker (Lazy Load) com timeout e feedback detalhado
+ * Inicializa o Tesseract Worker (Lazy Load) com timeout estendido e feedback detalhado
  */
 async function obterWorker() {
     if (tesseractWorker) return tesseractWorker;
@@ -50,13 +50,16 @@ async function obterWorker() {
     ocrLoading.classList.remove('d-none');
     
     const workerPromise = Tesseract.createWorker('por', 1, {
+        langPath: 'https://cdn.jsdelivr.net/gh/naptha/tessdata@gh-pages/4.0.0_fast',
         logger: m => {
             if (!m) return;
             if (m.status === 'loading tesseract core') {
-                ocrStatusTxt.textContent = "Carregando motor OCR...";
+                ocrStatusTxt.textContent = "Iniciando motor OCR...";
             } else if (m.status === 'loading language traineddata') {
                 const prog = Math.round((m.progress || 0) * 100);
-                ocrStatusTxt.textContent = `Baixando modelo de texto (${prog}%)...`;
+                progressBar.style.width = `${prog}%`;
+                progressPercent.textContent = `${prog}%`;
+                ocrStatusTxt.textContent = `Baixando inteligência OCR (${prog}%)...`;
             } else if (m.status === 'initializing api') {
                 ocrStatusTxt.textContent = "Preparando reconhecedor...";
             } else if (m.status === 'recognizing text') {
@@ -68,8 +71,9 @@ async function obterWorker() {
         }
     });
 
+    // 60s de timeout para permitir o download inicial do dicionário em conexões móveis
     const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Tempo limite excedido ao carregar motor OCR. Verifique sua conexão com a internet.")), 25000);
+        setTimeout(() => reject(new Error("Tempo limite excedido ao baixar modelo OCR (60s). Verifique sua conexão e tente novamente.")), 60000);
     });
 
     try {
