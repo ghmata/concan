@@ -1,72 +1,19 @@
-# Arquivos de ambiente e credenciais
-.env
-credentials.json
-*.json.backup
-
-# Banco de dados
-*.db
-*.sqlite
-*.sqlite3
-data/*.db
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# Virtual Environment
+# Ambiente virtual e caches do Python
 venv/
-env/
-ENV/
-env.bak/
-venv.bak/
+.venv/
+__pycache__/
+*.pyc
 
-# IDEs
+# Banco de dados local e uploads de produção (evita sobrescrever no servidor)
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+!data/.gitkeep
+uploads/
+
+# Arquivos temporários e IDEs
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Uploads e arquivos temporários
-uploads/*.pdf
-uploads/*.zip
-uploads/*.rar
-!uploads/.gitkeep
-
-# Logs
-*.log
-logs/
-
-# Sistema operacional
-Thumbs.db
-.DS_Store
-
-# PythonAnywhere
-mysite/
-
-# Arquivos de backup
-*.bak
-*.backup
-*~
+.gemini/
+tests/test_ocr_database.db
+credentials.json

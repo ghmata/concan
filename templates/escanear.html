@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/scanner.css">
+
+<!-- Tesseract.js via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<div class="scanner-container pb-5">
+    
+    <!-- ═══════════════════════════════════════════════════
+         SEÇÃO DE CAPTURA E PROCESSAMENTO OCR
+         ═══════════════════════════════════════════════════ -->
+    <div id="secao-captura" class="card shadow-lg border-0 rounded-4 p-4 mb-4">
+        <div class="text-center mb-4">
+            <h4 class="fw-bold text-primary mb-1"><i class="bi bi-camera-fill me-2"></i>Escanear Manifesto</h4>
+            <p class="text-muted small">Capture as páginas do manifesto físico sequencialmente</p>
+        </div>
+
+        <!-- Preview da Câmera / Imagem Capturada -->
+        <div class="preview-container mb-4">
+            <div id="pageBadge" class="page-counter-badge d-none">Página <span id="lblPageNum">1</span></div>
+            <img id="imgPreview" src="/static/images/icon-192.png" class="preview-image opacity-25" alt="Preview da Câmera">
+            <div class="scanner-overlay"></div>
+            <div id="ocrLoading" class="position-absolute top-50 start-50 translate-middle text-center d-none bg-dark bg-opacity-75 p-3 rounded-4" style="z-index: 20; min-width: 200px;">
+                <div class="spinner-border text-info mb-2" role="status"></div>
+                <div class="text-white small fw-bold" id="ocrStatusTxt">Processando OCR...</div>
+            </div>
+        </div>
+
+        <!-- Barra de Progresso OCR -->
+        <div id="progressOCRContainer" class="mb-4 d-none">
+            <div class="progress progress-ocr mb-1">
+                <div id="progressOCRBar" class="progress-bar progress-ocr-bar" style="width: 0%"></div>
+            </div>
+            <div class="d-flex justify-content-between text-muted small px-1">
+                <span id="ocrProgressPercent">0%</span>
+                <span>Tesseract OCR Engine</span>
+            </div>
+        </div>
+
+        <!-- Input Câmera Nativa (Invisível) -->
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" class="d-none">
+
+        <!-- Controles de Ação de Captura -->
+        <div class="d-grid gap-2">
+            <!-- Botão de Disparo / Seleção de Imagem -->
+            <button id="btnCapturar" class="btn btn-primary btn-lg py-3 rounded-3 shadow fw-bold">
+                <i class="bi bi-camera-fill me-2"></i>Tirar Foto / Carregar Página
+            </button>
+            
+            <!-- Ações após capturar pelo menos uma página -->
+            <div id="scanActions" class="row g-2 d-none mt-2">
+                <div class="col-6">
+                    <button id="btnProximaPagina" class="btn btn-outline-primary py-2.5 rounded-3 w-100 fw-bold">
+                        <i class="bi bi-plus-lg me-1"></i>+ Próxima Página
+                    </button>
+                </div>
+                <div class="col-6">
+                    <button id="btnFinalizar" class="btn btn-success py-2.5 rounded-3 w-100 fw-bold shadow-sm">
+                        <i class="bi bi-check2-all me-1"></i>Revisar e Enviar
+                    </button>
+                </div>
+            </div>
+            
+            <a href="/" class="btn btn-link text-secondary mt-3">Cancelar</a>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         SEÇÃO DE REVISÃO OBRIGATÓRIA (ANTIALUCINAÇÃO)
+         ═══════════════════════════════════════════════════ -->
+    <div id="secao-revisao" class="d-none">
+        
+        <!-- Banner de Confiança Baixa -->
+        <div id="lowConfidenceAlert" class="alert low-confidence-banner p-3 rounded-4 mb-4 d-none">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                <div>
+                    <h6 class="fw-bold mb-1">Qualidade de Leitura Baixa</h6>
+                    <span class="small">O nível de certeza do OCR ficou abaixo de 60%. Por favor, revise todos os campos destacados em amarelo com atenção extra antes de salvar.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-lg border-0 rounded-4 p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                <h5 class="fw-bold text-dark mb-0"><i class="bi bi-card-checklist text-primary me-2"></i>Revisão Humana Obrigatória</h5>
+                <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-bold"><span id="lblTotalPaginasCapturadas">0</span> página(s)</span>
+            </div>
+
+            <!-- Formulário dos Metadados do Manifesto -->
+            <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-file-earmark-text me-2"></i>Metadados do Manifesto</h6>
+            <div class="row g-3 mb-4">
+                <div class="col-12">
+                    <label for="revNumeroManifesto" class="form-label small fw-bold text-muted">Número do Manifesto (12 dígitos)</label>
+                    <input type="text" id="revNumeroManifesto" class="form-control form-control-lg fw-bold text-primary" maxlength="12" placeholder="Ex: 240101010101">
+                    <div id="revNumeroManifestoInfo" class="text-danger small mt-1 d-none"><i class="bi bi-exclamation-circle"></i> O número do manifesto precisa ter exatamente 12 dígitos.</div>
+                </div>
+                
+                <div class="col-6">
+                    <label for="revOrigem" class="form-label small fw-bold text-muted">Origem (Terminal)</label>
+                    <input type="text" id="revOrigem" class="form-control" placeholder="Ex: PCAN-DF">
+                </div>
+                
+                <div class="col-6">
+                    <label for="revDestino" class="form-label small fw-bold text-muted">Destino (Terminal)</label>
+                    <input type="text" id="revDestino" class="form-control" placeholder="Ex: TCTL-LS">
+                </div>
+
+                <div class="col-6">
+                    <label for="revMissao" class="form-label small fw-bold text-muted">Missão</label>
+                    <input type="text" id="revMissao" class="form-control" placeholder="Ex: 2026-07">
+                </div>
+
+                <div class="col-6">
+                    <label for="revAeronave" class="form-label small fw-bold text-muted">Aeronave</label>
+                    <input type="text" id="revAeronave" class="form-control" placeholder="Ex: C-105">
+                </div>
+            </div>
+
+            <!-- Seção de Volumes Encontrados -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-box-seam me-2"></i>Volumes Destinados ao PAMALS</h6>
+                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill fw-bold" onclick="adicionarVolumeManual()">
+                    <i class="bi bi-plus-lg"></i> Novo Volume
+                </button>
+            </div>
+
+            <!-- Container da Lista de Volumes -->
+            <div id="volumesReviewList" class="d-flex flex-column gap-3 mb-4">
+                <!-- Inserido dinamicamente via JS -->
+            </div>
+
+            <!-- Fallback para Importação Completamente Manual -->
+            <div id="fallbackManualAlert" class="alert alert-secondary text-center small rounded-3 p-3 mb-4 d-none">
+                <i class="bi bi-info-circle me-1"></i> Se o OCR falhar por imagem ilegível, você pode preencher todos os dados acima manualmente e enviar. As imagens capturadas serão salvas como evidência física.
+            </div>
+
+            <!-- Ações Finais do Formulário de Revisão -->
+            <div class="d-grid gap-2">
+                <button id="btnSalvarManifesto" type="button" class="btn btn-success btn-lg py-3 rounded-3 shadow fw-bold">
+                    <i class="bi bi-cloud-upload me-2"></i>Salvar e Importar Manifesto
+                </button>
+                <button type="button" class="btn btn-outline-secondary py-2.5 rounded-3" onclick="voltarParaCaptura()">
+                    <i class="bi bi-arrow-left me-1"></i>Voltar para Câmera
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL DE DUPLA CONFIRMAÇÃO
+     ═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalConfirmarImportacao" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-warning"><i class="bi bi-shield-fill-exclamation me-2"></i>Confirmar Importação OCR</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <p>Você revisou com sucesso todas as informações e volumes extraídos deste manifesto. Esta ação irá:</p>
+                <ul class="small mb-3">
+                    <li>Cadastrar o manifesto de origem <strong>OCR_MOBILE</strong> no sistema.</li>
+                    <li>Registrar a auditoria com o usuário <strong>{{ current_user.nome }}</strong>.</li>
+                    <li>Sincronizar imediatamente com o Google Sheets.</li>
+                    <li>Arquivar permanentemente as imagens no servidor como evidência física digitalizada.</li>
+                </ul>
+                <p class="mb-0 fw-bold text-dark">Deseja realmente confirmar e importar este manifesto?</p>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Revisar Novamente</button>
+                <button id="btnConfirmarSalvar" type="button" class="btn btn-success rounded-3 fw-bold">
+                    <i class="bi bi-check-lg me-1"></i>Confirmar e Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/ocr_scanner.js"></script>
+{% endblock %}

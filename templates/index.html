@@ -14,13 +14,11 @@
     .btn-view { background-color: #f1f5f9; color: #475569; border-color: #cbd5e1; }
     .btn-go { background-color: #2563eb; color: white; }
     
-    /* Estilo para o botão "Receber Tudo" (Roxo/Indigo) */
     .btn-all { background-color: #6366f1; color: white; border: none; }
     .btn-all:hover { background-color: #4f46e5; color: white; }
     
     .btn-del { background-color: #fee2e2; color: #dc2626; border-color: #fecaca; }
     
-    /* Botões Pequenos para Tabela de Detalhes */
     .btn-note { 
         width: 32px; height: 32px; padding: 0; border-radius: 6px; 
         color: #94a3b8; border: 1px solid #cbd5e1; background: white; 
@@ -38,8 +36,8 @@
 
     .table-custom td { vertical-align: middle; padding-top: 1rem; padding-bottom: 1rem; }
     .progress-thin { height: 8px; border-radius: 4px; background-color: #e2e8f0; }
+    .row-retirado { background-color: #fff1f2 !important; }
     
-    /* Ajuste Fino para Mobile */
     @media (max-width: 768px) {
         .col-acao-mobile { width: 45% !important; }
         .col-prog-mobile { width: 25% !important; }
@@ -51,6 +49,7 @@
     <div><h4 class="text-dark fw-bold mb-0">Manifestos</h4><p class="text-muted small mb-0">Gestão de cargas</p></div>
     <div class="d-flex gap-2">
         <a href="/busca" class="btn btn-white border shadow-sm btn-action text-secondary py-2"><i class="bi bi-search"></i> Buscar</a>
+        <a href="/escanear" class="btn btn-warning text-dark fw-bold shadow-sm btn-action py-2"><i class="bi bi-camera-fill"></i> Escanear</a>
         <a href="/novo" class="btn btn-go shadow-sm btn-action py-2"><i class="bi bi-plus-lg"></i> Novo</a>
     </div>
 </div>
@@ -170,8 +169,90 @@
     </div>
 </div>
 
-<!-- MODAL OBSERVAÇÃO -->
-<div class="modal fade" id="modalObs" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-4 border-0"><div class="modal-header bg-light border-bottom-0"><h5 class="modal-title">📝 Observação</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="obsVolId"><p class="small text-muted" id="obsVolTitulo"></p><textarea id="obsTexto" class="form-control rounded-3" rows="4" placeholder="Escreva aqui..."></textarea></div><div class="modal-footer border-top-0"><button class="btn btn-light btn-action" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-go btn-action" onclick="salvarObs()">Salvar</button></div></div></div></div>
+<!-- Modal Observação / Detalhes do Volume (v4) -->
+<div class="modal fade" id="modalObs" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title fw-bold">📝 Detalhes do Volume <span id="obsVolTitulo" class="text-primary"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="obsVolId">
+                
+                <!-- Abas ou Seções -->
+                <div class="row g-4">
+                    <!-- Esquerda: Rastreabilidade por Caixa e Dados Fixos -->
+                    <div class="col-md-6 border-end">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-boxes me-2 text-secondary"></i>Rastreio de Caixas Individuais</h6>
+                        <div class="table-responsive mb-4" style="max-height: 220px;">
+                            <table class="table table-sm table-hover align-middle small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Caixa</th>
+                                        <th>Status</th>
+                                        <th>Por / Detalhe</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tblCaixasRastreioBody">
+                                    <!-- Dinâmico -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <hr>
+
+                        <!-- Informações Fixas -->
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="fw-bold m-0"><i class="bi bi-lock-fill me-2 text-danger"></i>Informações de Controle (Fixo)</h6>
+                            <button class="btn btn-sm btn-link p-0 text-decoration-none text-danger fw-bold" onclick="habilitarEdicaoFixa()">
+                                <i class="bi bi-pencil-square"></i> Editar (Admin)
+                            </button>
+                        </div>
+                        <div class="bg-light p-3 rounded-3 small">
+                            <div class="mb-2">
+                                <span class="text-muted d-block">Quem retirou (se retirado):</span>
+                                <strong id="lblFixoRetiradoBy">-</strong>
+                                <input type="text" class="form-control form-control-sm d-none mt-1" id="txtFixoRetiradoBy">
+                            </div>
+                            <div>
+                                <span class="text-muted d-block">Motivo do Não Recebimento (se não recebido):</span>
+                                <strong id="lblFixoMotivo">-</strong>
+                                <input type="text" class="form-control form-control-sm d-none mt-1" id="txtFixoMotivo">
+                            </div>
+                            <div class="d-none mt-3" id="divFixoBotoes">
+                                <input type="password" class="form-control form-control-sm mb-2" id="pwdFixoAdmin" placeholder="Senha do Admin">
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-xs btn-danger w-100" onclick="salvarEdicaoFixa()">Salvar</button>
+                                    <button class="btn btn-xs btn-light border w-100" onclick="cancelarEdicaoFixa()">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Direita: Timeline de Observações Livres -->
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-chat-left-text-fill me-2 text-secondary"></i>Observações e Comentários Livres</h6>
+                        
+                        <!-- Lista de Comentários -->
+                        <div class="list-group list-group-flush mb-3 overflow-auto" id="lstComentarios" style="max-height: 220px; border: 1px solid #f1f5f9; border-radius: 8px; padding: 5px;">
+                            <!-- Dinâmico -->
+                        </div>
+
+                        <!-- Novo Comentário -->
+                        <div class="input-group">
+                            <input type="text" class="form-control rounded-start-3" id="txtNovoComentario" placeholder="Escrever comentário..." maxlength="255">
+                            <button class="btn btn-primary" onclick="adicionarComentario()"><i class="bi bi-send-fill"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-top-0 rounded-bottom-4">
+                <button class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     let modalDetalhes = null;
@@ -199,20 +280,187 @@
         } catch(e) { alert("Erro de conexão com o servidor."); } finally { document.body.style.cursor = 'default'; }
     }
     
-    // OBSERVAÇÃO
-    function abrirObs(btn) { 
-        document.getElementById('obsVolId').value = btn.dataset.id;
+    /** REQ-03: Formata ISO string para dd/mm/aa - hh:mm */
+    function formatarDataBRT(isoStr) {
+        if (!isoStr) return '-';
+        try {
+            const dt = new Date(isoStr);
+            if (isNaN(dt.getTime())) return isoStr;
+            const d = dt.getDate().toString().padStart(2,'0');
+            const m = (dt.getMonth()+1).toString().padStart(2,'0');
+            const y = dt.getFullYear().toString().slice(-2);
+            const h = dt.getHours().toString().padStart(2,'0');
+            const min = dt.getMinutes().toString().padStart(2,'0');
+            return `${d}/${m}/${y} - ${h}:${min}`;
+        } catch(e) { return isoStr; }
+    }
+    
+    const USUARIO_LOGADO = "{{ current_user.nome }}";
+
+    // ─── OBSERVAÇÕES DETALHADAS (v4) ───
+    async function abrirObs(btn) { 
+        const volId = btn.dataset.id;
+        document.getElementById('obsVolId').value = volId;
         document.getElementById('obsVolTitulo').innerText = btn.dataset.num;
-        document.getElementById('obsTexto').value = btn.dataset.obs; 
+        document.getElementById('txtNovoComentario').value = '';
+        cancelarEdicaoFixa();
+        await carregarDetalhesObs(volId);
         modalObs.show(); 
     }
 
-    async function salvarObs() { 
-        const id = document.getElementById('obsVolId').value; 
-        const txt = document.getElementById('obsTexto').value; 
-        await fetch('/api/observacao', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:id,texto:txt})}); 
-        modalObs.hide(); 
-        window.location.reload(); 
+    async function carregarDetalhesObs(volId) {
+        try {
+            const res = await fetch(`/api/volume/${volId}/observacoes`);
+            const data = await res.json();
+
+            // 1. Renderizar Caixas
+            const tbody = document.getElementById('tblCaixasRastreioBody');
+            tbody.innerHTML = '';
+            data.caixas.forEach(c => {
+                let statusBadge = '<span class="badge bg-secondary">Pendente</span>';
+                let det = '-';
+                if (c.status === 'RECEBIDA') {
+                    statusBadge = '<span class="badge bg-success">Recebida</span>';
+                    det = `${c.usuario_conferente}<br><span class="text-muted small">${formatarDataBRT(c.data_hora_recepcao)}</span>`;
+                } else if (c.status === 'RETIRADO POR OUTRA PESSOA') {
+                    statusBadge = '<span class="badge bg-danger">Retirada</span>';
+                    det = `Retirador: ${c.retirado_por || '-'}`;
+                } else if (c.motivo_nao_recebido) {
+                    statusBadge = '<span class="badge bg-warning text-dark">Não Rec.</span>';
+                    det = `Motivo: ${c.motivo_nao_recebido}`;
+                }
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="fw-bold">Cx ${c.numero_caixa}</td>
+                        <td>${statusBadge}</td>
+                        <td>${det}</td>
+                    </tr>
+                `;
+            });
+
+            // 2. Renderizar Info Fixas
+            document.getElementById('lblFixoRetiradoBy').innerText = data.info_fixas.retirado_por || '-';
+            document.getElementById('lblFixoMotivo').innerText = data.info_fixas.motivo_nao_recebido || '-';
+            
+            document.getElementById('txtFixoRetiradoBy').value = data.info_fixas.retirado_por || '';
+            document.getElementById('txtFixoMotivo').value = data.info_fixas.motivo_nao_recebido || '';
+
+            // 3. Renderizar Comentários Livres
+            const list = document.getElementById('lstComentarios');
+            list.innerHTML = '';
+            if (data.comentarios.length === 0) {
+                list.innerHTML = '<div class="text-muted text-center py-3 small">Nenhum comentário manual.</div>';
+            } else {
+                data.comentarios.forEach(c => {
+                    let btnExcluir = '';
+                    if (c.usuario === USUARIO_LOGADO) {
+                        btnExcluir = `<button class="btn btn-xs text-danger p-0 border-0 ms-2" onclick="excluirComentario(${c.id})"><i class="bi bi-trash"></i></button>`;
+                    }
+
+                    list.innerHTML += `
+                        <div class="list-group-item px-2 py-2 border-0 border-bottom">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-dark small">${c.usuario}</span>
+                                <span class="text-muted" style="font-size:0.7rem;">${c.timestamp_formatado} ${btnExcluir}</span>
+                            </div>
+                            <p class="m-0 text-secondary" style="font-size:0.8rem; word-break: break-all;">${c.texto}</p>
+                        </div>
+                    `;
+                });
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    async function adicionarComentario() {
+        const id = document.getElementById('obsVolId').value;
+        const txt = document.getElementById('txtNovoComentario').value.trim();
+        if (!txt) return;
+
+        try {
+            const res = await fetch('/api/observacao_manual/adicionar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({volume_id: id, texto: txt})
+            });
+            if (res.ok) {
+                document.getElementById('txtNovoComentario').value = '';
+                await carregarDetalhesObs(id);
+            } else {
+                const err = await res.json();
+                alert(err.msg || "Erro ao adicionar comentário.");
+            }
+        } catch(e) { alert("Erro de conexão."); }
+    }
+
+    async function excluirComentario(obsId) {
+        if (!confirm("Excluir esta observação permanente?")) return;
+        const id = document.getElementById('obsVolId').value;
+        try {
+            const res = await fetch('/api/observacao_manual/excluir', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({observacao_id: obsId})
+            });
+            if (res.ok) {
+                await carregarDetalhesObs(id);
+            } else {
+                const err = await res.json();
+                alert(err.msg || "Erro ao excluir.");
+            }
+        } catch(e) { alert("Erro de conexão."); }
+    }
+
+    function habilitarEdicaoFixa() {
+        document.getElementById('lblFixoRetiradoBy').classList.add('d-none');
+        document.getElementById('lblFixoMotivo').classList.add('d-none');
+        
+        document.getElementById('txtFixoRetiradoBy').classList.remove('d-none');
+        document.getElementById('txtFixoMotivo').classList.remove('d-none');
+        
+        document.getElementById('divFixoBotoes').classList.remove('d-none');
+    }
+
+    function cancelarEdicaoFixa() {
+        document.getElementById('lblFixoRetiradoBy').classList.remove('d-none');
+        document.getElementById('lblFixoMotivo').classList.remove('d-none');
+        
+        document.getElementById('txtFixoRetiradoBy').classList.add('d-none');
+        document.getElementById('txtFixoMotivo').classList.add('d-none');
+        
+        document.getElementById('divFixoBotoes').classList.add('d-none');
+        document.getElementById('pwdFixoAdmin').value = '';
+    }
+
+    async function salvarEdicaoFixa() {
+        const id = document.getElementById('obsVolId').value;
+        const ret = document.getElementById('txtFixoRetiradoBy').value.trim();
+        const mot = document.getElementById('txtFixoMotivo').value.trim();
+        const pwd = document.getElementById('pwdFixoAdmin').value;
+
+        if (!pwd) return alert("Insira a senha do administrador para salvar.");
+
+        try {
+            const res = await fetch('/api/volume/info_fixas/atualizar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    volume_id: id,
+                    retirado_por: ret,
+                    motivo_nao_recebido: mot,
+                    senha_admin: pwd
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert("Dados de controle atualizados!");
+                cancelarEdicaoFixa();
+                await carregarDetalhesObs(id);
+                document.getElementById('modalObs').addEventListener('hidden.bs.modal', () => window.location.reload(), {once: true});
+            } else {
+                alert(data.msg || "Erro ao salvar.");
+            }
+        } catch(e) { alert("Erro de conexão."); }
     }
 
     // DESFAZER (Interface Principal)
@@ -239,14 +487,29 @@
             volumes.forEach(v => {
                 const tr = document.createElement('tr');
                 const isRec = v.status === 'COMPLETO' || v.status === 'TOTALMENTE RECEBIDO';
-                let dataRec = v.data_hora_ultima_recepcao ? new Date(v.data_hora_ultima_recepcao).toLocaleDateString('pt-BR') : '-';
+                const isRet = v.status === 'RETIRADO POR OUTRA PESSOA';
+                let dataRec = formatarDataBRT(v.data_hora_ultima_recepcao);
                 
                 let btnObs = `<button class="btn-note ${v.observacao?'has-obs':''}" data-id="${v.id}" data-num="${v.numero_volume}" data-obs="${v.observacao||''}" onclick="abrirObs(this)">${v.observacao?'<i class="bi bi-pencil-fill"></i>':'<i class="bi bi-pencil"></i>'}</button>`;
                 
-                let btnDesfazer = '-';
-                if (isRec) {
-                    btnDesfazer = `<button class="btn-undo-sm" onclick="desfazerRecebimentoDetalhes(${v.id})" title="Desfazer Recebimento"><i class="bi bi-arrow-counterclockwise"></i></button>`;
+                // REQ-02: Indicador de múltiplos conferentes para volumes multicaixas
+                let porInfo = v.usuario_recepcao || '-';
+                if (v.quantidade_expedida > 1 && v.quantidade_recebida > 0) {
+                    porInfo += ' <i class="bi bi-people-fill text-info" title="Volume com múltiplos conferentes"></i>';
                 }
+
+                let btnDesfazer = '-';
+                if (isRec || isRet) {
+                    btnDesfazer = `<button class="btn-undo-sm" onclick="desfazerRecebimentoDetalhes(${v.id})" title="Desfazer"><i class="bi bi-arrow-counterclockwise"></i></button>`;
+                }
+
+                // Status badge
+                let statusBadge = '<span class="badge bg-secondary">Pendente</span>';
+                if (isRec) statusBadge = '<span class="badge bg-success">Recebido</span>';
+                else if (isRet) statusBadge = '<span class="badge bg-danger">Retirado</span>';
+                else if (v.status === 'PARCIAL') statusBadge = '<span class="badge bg-warning text-dark">Parcial</span>';
+
+                if (isRet) tr.classList.add('row-retirado');
 
                 tr.innerHTML = `
                     <td class="text-center fw-bold text-dark">${v.remetente}</td>
@@ -255,8 +518,8 @@
                     <td class="text-center">${btnObs}</td>
                     <td class="text-center"><span class="badge bg-light text-dark border">${v.quantidade_recebida}/${v.quantidade_expedida}</span></td>
                     <td class="text-center small text-muted">${dataRec}</td>
-                    <td class="text-center small fw-bold">${v.usuario_recepcao || '-'}</td>
-                    <td class="text-center">${isRec ? '<span class="badge bg-success">Recebido</span>' : '<span class="badge bg-secondary">Pendente</span>'}</td>
+                    <td class="text-center small fw-bold">${porInfo}</td>
+                    <td class="text-center">${statusBadge}</td>
                     <td class="text-center">${btnDesfazer}</td>
                 `;
                 corpo.appendChild(tr);

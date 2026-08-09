@@ -3,130 +3,72 @@
 {% block content %}
 
 <style>
-    .row-completo {
-        background-color: #f0fdf4 !important;
-    }
-
-    .row-parcial {
-        background-color: #fefce8 !important;
-    }
-
+    .row-completo { background-color: #f0fdf4 !important; }
+    .row-parcial { background-color: #fefce8 !important; }
+    .row-retirado { background-color: #fff1f2 !important; }
+    
     /* Botões UX Mobile */
-    .btn-action {
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 0.85rem;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        padding: 0.6rem 0.8rem;
-        transition: all 0.2s;
-        border: 1px solid transparent;
-        width: 100%;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    .btn-action { 
+        border-radius: 8px; font-weight: 600; font-size: 0.85rem; 
+        display: inline-flex; align-items: center; justify-content: center; 
+        gap: 6px; padding: 0.6rem 0.8rem; transition: all 0.2s; border: 1px solid transparent; width: 100%; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
+    .btn-action:active { transform: scale(0.98); }
+    
+    .btn-rec { background-color: #22c55e; color: white; border: none; }
+    .btn-rec:hover { background-color: #16a34a; color: white; }
+    
+    .btn-all { background-color: #4f46e5; color: white; border: none; }
+    .btn-all:hover { background-color: #4338ca; color: white; }
 
-    .btn-action:active {
-        transform: scale(0.98);
-    }
-
-    .btn-rec {
-        background-color: #22c55e;
-        color: white;
-        border: none;
-    }
-
-    .btn-rec:hover {
-        background-color: #16a34a;
-        color: white;
-    }
-
-    .btn-all {
-        background-color: #4f46e5;
-        color: white;
-        border: none;
-    }
-
-    .btn-all:hover {
-        background-color: #4338ca;
-        color: white;
-    }
-
-    .btn-undo {
-        background-color: #fff1f2;
-        color: #e11d48;
-        border-color: #fecdd3;
-    }
-
-    .btn-undo:hover {
-        background-color: #ffe4e6;
-    }
-
+    .btn-undo { background-color: #fff1f2; color: #e11d48; border-color: #fecdd3; }
+    .btn-undo:hover { background-color: #ffe4e6; }
+    
+    .btn-warn { background-color: #fef3c7; color: #92400e; border-color: #fcd34d; }
+    .btn-warn:hover { background-color: #fde68a; }
+    
     /* Botão OBS: Estilo "Vazio" vs "Preenchido" */
-    .btn-note {
-        width: 100%;
-        height: 38px;
-        padding: 0 10px;
-        border-radius: 8px;
-        color: #64748b;
-        border: 1px solid #cbd5e1;
-        background: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-        font-weight: 500;
-        font-size: 0.85rem;
+    .btn-note { 
+        width: 100%; height: 38px; padding: 0 10px; border-radius: 8px; 
+        color: #64748b; border: 1px solid #cbd5e1; background: white; 
+        display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: 500; font-size: 0.85rem;
     }
-
-    .btn-note.has-obs {
-        background-color: #fffbeb;
-        color: #d97706;
-        border-color: #fcd34d;
+    .btn-note.has-obs { 
+        background-color: #fffbeb; color: #d97706; border-color: #fcd34d; 
         font-weight: bold;
     }
+    .btn-note:hover { border-color: #94a3b8; color: #475569; }
 
-    .btn-note:hover {
-        border-color: #94a3b8;
-        color: #475569;
-    }
-
-    .table-middle td {
-        vertical-align: middle;
-        padding-top: 12px;
-        padding-bottom: 12px;
-    }
-
+    .table-middle td { vertical-align: middle; padding-top: 12px; padding-bottom: 12px; }
+    
     /* Layout Responsivo de Botões */
-    .btn-group-mobile {
-        display: flex;
-        gap: 8px;
-        flex-direction: row;
-    }
-
+    .btn-group-mobile { display: flex; gap: 8px; flex-direction: row; }
     @media (max-width: 576px) {
-        .btn-group-mobile {
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .mobile-col-action {
-            width: 40% !important;
-        }
+        .btn-group-mobile { flex-direction: column; gap: 8px; }
+        .mobile-col-action { width: 40% !important; }
     }
+
+    /* Conferente info no modal de caixas */
+    .caixa-conferente { font-size: 0.75rem; color: #64748b; }
+    .caixa-retirado { font-size: 0.75rem; color: #dc2626; font-weight: 600; }
 </style>
 
 <div class="card shadow-sm border-0 rounded-4 mb-4">
     <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3 p-4">
         <div>
             <h5 class="mb-1 fw-bold text-dark">{{ m.numero_manifesto }}</h5>
-            <small class="text-muted d-block"><i class="bi bi-person-circle me-1"></i> Conferente: <strong>{{
-                    current_user.nome }}</strong></small>
+            <small class="text-muted d-block"><i class="bi bi-person-circle me-1"></i> Conferente: <strong>{{ current_user.nome }}</strong></small>
         </div>
         <div class="d-flex gap-2 flex-wrap justify-content-end">
-            <!-- Botão Extramanifesto -->
-            <button class="btn btn-warning text-dark fw-bold shadow-sm" onclick="abrirModalExtra()">
+             {% if m.origem == 'OCR_MOBILE' %}
+             <!-- Botão Ver Manifesto Escaneado -->
+             <button class="btn btn-info text-white fw-bold shadow-sm" onclick="abrirGaleriaEscaneada({{ m.id }})">
+                <i class="bi bi-file-earmark-image me-2"></i>Ver Escaneado
+             </button>
+             {% endif %}
+             <!-- Botão Extramanifesto -->
+             <button class="btn btn-warning text-dark fw-bold shadow-sm" onclick="abrirModalExtra()">
                 <i class="bi bi-plus-circle-fill me-2"></i>Extramanifesto
             </button>
             <button class="btn btn-outline-secondary fw-bold border-2" onclick="encerrarSessao()">
@@ -143,8 +85,7 @@
     <div class="card-header bg-white border-bottom-0 pt-4 px-4 pb-3">
         <div class="input-group">
             <span class="input-group-text bg-light border-0 text-muted"><i class="bi bi-search"></i></span>
-            <input type="text" id="filtroTabela" class="form-control border-0 bg-light py-2"
-                placeholder="Filtrar volume..." onkeyup="filtrarTabela()">
+            <input type="text" id="filtroTabela" class="form-control border-0 bg-light py-2" placeholder="Filtrar volume..." onkeyup="filtrarTabela()">
         </div>
     </div>
     <div class="card-body p-0">
@@ -162,86 +103,80 @@
                 <tbody>
                     {% for v in volumes %}
                     {% set row_class = 'bg-white' %}
-                    {% if v.status == 'COMPLETO' %} {% set row_class = 'row-completo' %} {% elif v.status == 'PARCIAL'
-                    %} {% set row_class = 'row-parcial' %} {% endif %}
-
+                    {% if v.status == 'COMPLETO' %} {% set row_class = 'row-completo' %}
+                    {% elif v.status == 'PARCIAL' %} {% set row_class = 'row-parcial' %}
+                    {% elif v.status == 'RETIRADO POR OUTRA PESSOA' %} {% set row_class = 'row-retirado' %}
+                    {% endif %}
+                    
                     <tr class="{{ row_class }} linha-volume" data-timestamp="{{ v.data_hora_ultima_recepcao or '' }}">
                         <td class="text-center d-none d-sm-table-cell">
                             {% if v.status == 'COMPLETO' %}<i class="bi bi-check-circle-fill text-success fs-5"></i>
-                            {% elif v.status == 'PARCIAL' %}<i
-                                class="bi bi-exclamation-circle-fill text-warning fs-5"></i>
+                            {% elif v.status == 'PARCIAL' %}<i class="bi bi-exclamation-circle-fill text-warning fs-5"></i>
+                            {% elif v.status == 'RETIRADO POR OUTRA PESSOA' %}<i class="bi bi-person-x-fill text-danger fs-5"></i>
                             {% else %}<i class="bi bi-circle text-muted fs-5"></i>{% endif %}
                         </td>
                         <td class="text-start ps-4">
                             <div class="fw-bold text-dark texto-filtro fs-6">{{ v.numero_volume }}</div>
                             <small class="text-muted texto-filtro">{{ v.remetente }}</small>
                             <div class="d-block d-sm-none mt-1">
-                                {% if v.status == 'COMPLETO' %} <span
-                                    class="badge bg-success-subtle text-success">Recebido</span>
-                                {% elif v.status == 'PARCIAL' %} <span
-                                    class="badge bg-warning-subtle text-warning-emphasis">Parcial</span> {% endif %}
+                                {% if v.status == 'COMPLETO' %} <span class="badge bg-success-subtle text-success">Recebido</span>
+                                {% elif v.status == 'PARCIAL' %} <span class="badge bg-warning-subtle text-warning-emphasis">Parcial</span>
+                                {% elif v.status == 'RETIRADO POR OUTRA PESSOA' %} <span class="badge bg-danger-subtle text-danger">Retirado</span>
+                                {% endif %}
                             </div>
+                            {% if v.data_hora_ultima_recepcao %}
+                            <div class="d-block d-sm-none"><small class="text-muted">{{ v.data_hora_ultima_recepcao | formatarbrt }}</small></div>
+                            {% endif %}
                         </td>
-
+                        
                         <!-- Coluna OBS Desktop -->
                         <td class="text-center d-none d-sm-table-cell">
-                            <button class="btn-note {{ 'has-obs' if v.observacao else '' }}" data-id="{{ v.id }}"
-                                data-num="{{ v.numero_volume }}" data-obs="{{ v.observacao or '' }}"
-                                onclick="abrirObs(this)">
-                                {% if v.observacao %}<i class="bi bi-pencil-fill"></i>{% else %}<i
-                                    class="bi bi-pencil"></i>{% endif %}
+                            <button class="btn-note {{ 'has-obs' if v.observacao else '' }}" 
+                                    data-id="{{ v.id }}" data-num="{{ v.numero_volume }}" data-obs="{{ v.observacao or '' }}" 
+                                    onclick="abrirObs(this)">
+                                {% if v.observacao %}<i class="bi bi-pencil-fill"></i>{% else %}<i class="bi bi-pencil"></i>{% endif %}
                             </button>
                         </td>
-
+                        
                         <td class="text-center fw-bold">{{ v.quantidade_recebida }}/{{ v.quantidade_expedida }}</td>
-
+                        
                         <td class="text-center px-3">
                             <div class="btn-group-mobile">
                                 <!-- Botão OBS Mobile -->
-                                <button class="btn-note d-flex d-sm-none {{ 'has-obs' if v.observacao else '' }}"
-                                    data-id="{{ v.id }}" data-num="{{ v.numero_volume }}"
-                                    data-obs="{{ v.observacao or '' }}" onclick="abrirObs(this)">
-                                    {% if v.observacao %}<i class="bi bi-pencil-fill"></i>{% else %}<i
-                                        class="bi bi-pencil"></i>{% endif %} Obs
+                                <button class="btn-note d-flex d-sm-none {{ 'has-obs' if v.observacao else '' }}" 
+                                        data-id="{{ v.id }}" data-num="{{ v.numero_volume }}" data-obs="{{ v.observacao or '' }}" 
+                                        onclick="abrirObs(this)">
+                                    {% if v.observacao %}<i class="bi bi-pencil-fill"></i>{% else %}<i class="bi bi-pencil"></i>{% endif %} Obs
                                 </button>
-
-                                {% if v.status != 'COMPLETO' %}
-                                {% if v.quantidade_expedida > 1 %}
-                                <!-- Múltiplas Caixas: Botão Receber Individual + Receber Tudo -->
-                                <button class="btn btn-action btn-rec"
-                                    onclick="abrirModal({{ v.id }}, '{{ v.numero_volume }}', 'RECEBER')">
-                                    <i class="bi bi-boxes"></i> Caixas
-                                </button>
-                                <button class="btn btn-action btn-all"
-                                    onclick="receberTudoVolume({{ v.id }}, '{{ v.numero_volume }}')">
-                                    <i class="bi bi-check-all"></i> Tudo
-                                </button>
+                                
+                                {% if v.status == 'RETIRADO POR OUTRA PESSOA' %}
+                                    <!-- Volume retirado: apenas desfazer -->
+                                    <button class="btn btn-action btn-undo" onclick="processarDesfazer({{ v.id }}, {{ v.quantidade_expedida }}, '{{ v.numero_volume }}', this)">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Desfazer
+                                    </button>
+                                {% elif v.status != 'COMPLETO' %}
+                                    {% if v.quantidade_expedida > 1 %}
+                                        <!-- Múltiplas Caixas: Botão Receber Individual + Receber Tudo + Status Especial -->
+                                        <button class="btn btn-action btn-rec" onclick="abrirModal({{ v.id }}, '{{ v.numero_volume }}', 'RECEBER')">
+                                            <i class="bi bi-boxes"></i> Caixas
+                                        </button>
+                                        <button class="btn btn-action btn-all" onclick="receberTudoVolume({{ v.id }}, '{{ v.numero_volume }}')">
+                                            <i class="bi bi-check-all"></i> Tudo
+                                        </button>
+                                    {% else %}
+                                        <!-- Caixa Única: Recebimento Direto -->
+                                        <button class="btn btn-action btn-rec" onclick="processarRecebimento({{ v.id }}, 1, '{{ v.numero_volume }}')">
+                                            <i class="bi bi-box-seam-fill"></i> Receber
+                                        </button>
+                                    {% endif %}
+                                    <!-- Botão Status Especial (REQ-01) -->
+                                    <button class="btn btn-action btn-warn" style="width:auto; min-width:42px; flex:0;" onclick="abrirStatusEspecial({{ v.id }}, null, '{{ v.numero_volume }}')" title="Status Especial">
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                    </button>
                                 {% else %}
-                                <!-- Caixa Única: Recebimento Direto -->
-                                <button class="btn btn-action btn-rec"
-                                    onclick="processarRecebimento({{ v.id }}, 1, '{{ v.numero_volume }}')">
-                                    <i class="bi bi-box-seam-fill"></i> Receber
-                                </button>
-                                {% endif %}
-                                {% else %}
-                                <button class="btn btn-action btn-undo"
-                                    onclick="processarDesfazer({{ v.id }}, {{ v.quantidade_expedida }}, '{{ v.numero_volume }}', this)">
-                                    <i class="bi bi-arrow-counterclockwise"></i> Desfazer
-                                </button>
-                                {% endif %}
-
-                                {# Botões para volumes EXTRA #}
-                                {% if v.prioridade == 'EXTRA' %}
-                                <button class="btn btn-action btn-view"
-                                    onclick="abrirModalEditarExtra({{ v.id }}, '{{ v.numero_volume }}', '{{ v.remetente }}', {{ v.quantidade_expedida }})"
-                                    title="Editar">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                                <button class="btn btn-action btn-view"
-                                    onclick="abrirModalHistoricoExtra({{ v.id }}, '{{ v.numero_volume }}')"
-                                    title="Histórico">
-                                    <i class="bi bi-clock-history"></i>
-                                </button>
+                                    <button class="btn btn-action btn-undo" onclick="processarDesfazer({{ v.id }}, {{ v.quantidade_expedida }}, '{{ v.numero_volume }}', this)">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Desfazer
+                                    </button>
                                 {% endif %}
                             </div>
                         </td>
@@ -253,187 +188,363 @@
     </div>
 </div>
 
-<!-- Modais (Mantidos e Ajustados) -->
+<!-- Modal Observação / Detalhes do Volume (v4) -->
 <div class="modal fade" id="modalObs" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
             <div class="modal-header bg-light border-bottom-0">
-                <h5 class="modal-title">📝 Observação</h5><button type="button" class="btn-close"
-                    data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body"><input type="hidden" id="obsVolId">
-                <p class="small text-muted" id="obsVolTitulo"></p><textarea id="obsTexto" class="form-control rounded-3"
-                    rows="4" placeholder="Escreva aqui..."></textarea>
-            </div>
-            <div class="modal-footer border-top-0"><button class="btn btn-light btn-action"
-                    data-bs-dismiss="modal">Cancelar</button><button class="btn btn-go btn-action"
-                    onclick="salvarObs()">Salvar</button></div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalCaixas" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0 shadow-lg">
-            <div id="modalHeader" class="modal-header text-white border-bottom-0">
-                <div>
-                    <h5 class="modal-title fw-bold" id="modalTitulo"></h5>
-                </div><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-0">
-                <div id="listaCaixasContainer" class="list-group list-group-flush"></div>
-            </div>
-            <div class="modal-footer border-top-0"><button class="btn btn-secondary btn-rounded"
-                    data-bs-dismiss="modal">Fechar</button></div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Extramanifesto -->
-<div class="modal fade" id="modalExtra" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0 shadow-lg">
-            <div class="modal-header bg-warning bg-opacity-10 border-bottom-0">
-                <h5 class="modal-title fw-bold text-dark"><i
-                        class="bi bi-plus-circle-fill me-2 text-warning"></i>Extramanifesto</h5><button type="button"
-                    class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form id="formExtra" onsubmit="return false;">
-                    <div class="mb-3"><label class="form-label fw-bold small">Número do Volume <span
-                                class="text-danger">*</span></label><input type="text" id="extraNumero"
-                            class="form-control rounded-3" required></div>
-                    <div class="mb-3"><label class="form-label fw-bold small">Remetente</label><input type="text"
-                            id="extraRemetente" class="form-control rounded-3"></div>
-                    <div class="mb-3"><label class="form-label fw-bold small">Quantidade</label><input type="number"
-                            id="extraQtd" class="form-control rounded-3" value="1" min="1" required></div>
-                </form>
-            </div>
-            <div class="modal-footer border-top-0 bg-light rounded-bottom-4"><button type="button"
-                    class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button><button type="button"
-                    class="btn btn-warning rounded-pill fw-bold px-4" onclick="salvarExtra()">Adicionar</button></div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Editar Extramanifesto -->
-<div class="modal fade" id="modalEditarExtra" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0 shadow-lg">
-            <div class="modal-header bg-info bg-opacity-10 border-bottom-0">
-                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-pencil-square me-2 text-info"></i>Editar
-                    Extramanifesto</h5>
+                <h5 class="modal-title fw-bold">📝 Detalhes do Volume <span id="obsVolTitulo" class="text-primary"></span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
-                <input type="hidden" id="editExtraId">
-                <div class="mb-3">
-                    <label class="form-label fw-bold small">Senha de Segurança <span
-                            class="text-danger">*</span></label>
-                    <input type="password" id="editExtraSenha" class="form-control rounded-3"
-                        placeholder="Digite a senha..." required>
+                <input type="hidden" id="obsVolId">
+                
+                <!-- Abas ou Seções -->
+                <div class="row g-4">
+                    <!-- Esquerda: Rastreabilidade por Caixa e Dados Fixos -->
+                    <div class="col-md-6 border-end">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-boxes me-2 text-secondary"></i>Rastreio de Caixas Individuais</h6>
+                        <div class="table-responsive mb-4" style="max-height: 220px;">
+                            <table class="table table-sm table-hover align-middle small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Caixa</th>
+                                        <th>Status</th>
+                                        <th>Por / Detalhe</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tblCaixasRastreioBody">
+                                    <!-- Dinâmico -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <hr>
+
+                        <!-- Informações Fixas -->
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="fw-bold m-0"><i class="bi bi-lock-fill me-2 text-danger"></i>Informações de Controle (Fixo)</h6>
+                            <button class="btn btn-sm btn-link p-0 text-decoration-none text-danger fw-bold" onclick="habilitarEdicaoFixa()">
+                                <i class="bi bi-pencil-square"></i> Editar (Admin)
+                            </button>
+                        </div>
+                        <div class="bg-light p-3 rounded-3 small">
+                            <div class="mb-2">
+                                <span class="text-muted d-block">Quem retirou (se retirado):</span>
+                                <strong id="lblFixoRetiradoBy">-</strong>
+                                <input type="text" class="form-control form-control-sm d-none mt-1" id="txtFixoRetiradoBy">
+                            </div>
+                            <div>
+                                <span class="text-muted d-block">Motivo do Não Recebimento (se não recebido):</span>
+                                <strong id="lblFixoMotivo">-</strong>
+                                <input type="text" class="form-control form-control-sm d-none mt-1" id="txtFixoMotivo">
+                            </div>
+                            <div class="d-none mt-3" id="divFixoBotoes">
+                                <input type="password" class="form-control form-control-sm mb-2" id="pwdFixoAdmin" placeholder="Senha do Admin">
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-xs btn-danger w-100" onclick="salvarEdicaoFixa()">Salvar</button>
+                                    <button class="btn btn-xs btn-light border w-100" onclick="cancelarEdicaoFixa()">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Direita: Timeline de Observações Livres -->
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-chat-left-text-fill me-2 text-secondary"></i>Observações e Comentários Livres</h6>
+                        
+                        <!-- Lista de Comentários -->
+                        <div class="list-group list-group-flush mb-3 overflow-auto" id="lstComentarios" style="max-height: 220px; border: 1px solid #f1f5f9; border-radius: 8px; padding: 5px;">
+                            <!-- Dinâmico -->
+                        </div>
+
+                        <!-- Novo Comentário -->
+                        <div class="input-group">
+                            <input type="text" class="form-control rounded-start-3" id="txtNovoComentario" placeholder="Escrever comentário..." maxlength="255">
+                            <button class="btn btn-primary" onclick="adicionarComentario()"><i class="bi bi-send-fill"></i></button>
+                        </div>
+                    </div>
                 </div>
+            </div>
+            <div class="modal-footer bg-light border-top-0 rounded-bottom-4">
+                <button class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Caixas -->
+<div class="modal fade" id="modalCaixas" tabindex="-1" data-bs-backdrop="static"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-4 border-0 shadow-lg"><div id="modalHeader" class="modal-header text-white border-bottom-0"><div><h5 class="modal-title fw-bold" id="modalTitulo"></h5></div><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body p-0"><div id="listaCaixasContainer" class="list-group list-group-flush"></div></div><div class="modal-footer border-top-0"><button class="btn btn-secondary btn-rounded" data-bs-dismiss="modal">Fechar</button></div></div></div></div>
+
+<!-- Modal Extramanifesto -->
+<div class="modal fade" id="modalExtra" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-4 border-0 shadow-lg"><div class="modal-header bg-warning bg-opacity-10 border-bottom-0"><h5 class="modal-title fw-bold text-dark"><i class="bi bi-plus-circle-fill me-2 text-warning"></i>Extramanifesto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-4"><form id="formExtra" onsubmit="return false;"><div class="mb-3"><label class="form-label fw-bold small">Número do Volume <span class="text-danger">*</span></label><input type="text" id="extraNumero" class="form-control rounded-3" required></div><div class="mb-3"><label class="form-label fw-bold small">Remetente</label><input type="text" id="extraRemetente" class="form-control rounded-3"></div><div class="mb-3"><label class="form-label fw-bold small">Quantidade</label><input type="number" id="extraQtd" class="form-control rounded-3" value="1" min="1" required></div></form></div><div class="modal-footer border-top-0 bg-light rounded-bottom-4"><button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-warning rounded-pill fw-bold px-4" onclick="salvarExtra()">Adicionar</button></div></div></div></div>
+
+<!-- Modal Status Especial (REQ-01) -->
+<div class="modal fade" id="modalStatusEspecial" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-danger bg-opacity-10 border-bottom-0">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>Status Especial</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="statusVolId">
+                <input type="hidden" id="statusCaixaNum">
+                <p class="small text-muted fw-bold" id="statusVolTitulo"></p>
+
                 <div class="mb-3">
-                    <label class="form-label fw-bold small">Número do Volume <span class="text-danger">*</span></label>
-                    <input type="text" id="editExtraNumero" class="form-control rounded-3" required>
+                    <label class="form-label fw-bold small text-dark">Novo Status <span class="text-danger">*</span></label>
+                    <select class="form-select rounded-3" id="statusTipo" onchange="toggleStatusCampos()">
+                        <option value="">Selecione...</option>
+                        <option value="NÃO RECEBIDO">NÃO RECEBIDO</option>
+                        <option value="RETIRADO POR OUTRA PESSOA">RETIRADO POR OUTRA PESSOA</option>
+                    </select>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold small">Remetente</label>
-                    <input type="text" id="editExtraRemetente" class="form-control rounded-3">
+
+                <!-- Campo Digitação Manual Obrigatório: Quem retirou -->
+                <div id="divRetiradoPorManual" class="d-none mb-3">
+                    <label class="form-label fw-bold small text-dark">Quem retirou? <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control rounded-3" id="retiradoPorManualTexto" 
+                           placeholder="Digite o nome de quem retirou (obrigatório)" maxlength="100">
+                    <small class="text-muted">Como a pessoa é externa ao sistema, digite o nome completo.</small>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold small">Quantidade</label>
-                    <input type="number" id="editExtraQtd" class="form-control rounded-3" value="1" min="1" required>
+
+                <!-- Campo Digitação Manual Obrigatório: Motivo do Não Recebimento -->
+                <div id="divMotivoNaoRecebido" class="d-none mb-3">
+                    <label class="form-label fw-bold small text-dark">Motivo do Não Recebimento <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control rounded-3" id="motivoNaoRecebidoTexto" 
+                           placeholder="Digite o motivo do não recebimento (obrigatório)" maxlength="255">
                 </div>
             </div>
             <div class="modal-footer border-top-0 bg-light rounded-bottom-4">
-                <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-info rounded-pill fw-bold px-4"
-                    onclick="salvarEdicaoExtra()">Salvar Alterações</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Histórico Extramanifesto -->
-<div class="modal fade" id="modalHistoricoExtra" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content rounded-4 border-0 shadow-lg">
-            <div class="modal-header bg-secondary bg-opacity-10 border-bottom-0">
-                <h5 class="modal-title fw-bold text-dark"><i
-                        class="bi bi-clock-history me-2 text-secondary"></i>Histórico de Edições - <span
-                        id="historicoTitulo"></span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-striped mb-0 small">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Data/Hora</th>
-                                <th>Usuário</th>
-                                <th>Campo</th>
-                                <th>Valor Anterior</th>
-                                <th>Valor Novo</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabelaHistorico"></tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer border-top-0">
-                <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Fechar</button>
+                <button class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-danger rounded-pill fw-bold px-4" onclick="salvarStatusEspecial()">Confirmar</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    let modalCaixas, modalObs, modalExtra, modalEditarExtra, modalHistoricoExtra;
-    const MANIFESTO_ID = "{{ m.id }}"; const SESSION_KEY = `start_time_${MANIFESTO_ID}`; let sessionStartTime = null;
+    let modalCaixas, modalObs, modalExtra, modalStatusEspecial;
+    const MANIFESTO_ID="{{ m.id }}"; const SESSION_KEY=`start_time_${MANIFESTO_ID}`; let sessionStartTime=null;
+    const USUARIO_LOGADO="{{ current_user.nome }}";
 
-    document.addEventListener("DOMContentLoaded", function () {
-        modalCaixas = new bootstrap.Modal(document.getElementById('modalCaixas'));
-        modalObs = new bootstrap.Modal(document.getElementById('modalObs'));
-        modalExtra = new bootstrap.Modal(document.getElementById('modalExtra'));
-        modalEditarExtra = new bootstrap.Modal(document.getElementById('modalEditarExtra'));
-        modalHistoricoExtra = new bootstrap.Modal(document.getElementById('modalHistoricoExtra'));
-
-        const savedTime = sessionStorage.getItem(SESSION_KEY);
+    document.addEventListener("DOMContentLoaded", function() {
+        modalCaixas=new bootstrap.Modal(document.getElementById('modalCaixas'));
+        modalObs=new bootstrap.Modal(document.getElementById('modalObs'));
+        modalExtra=new bootstrap.Modal(document.getElementById('modalExtra'));
+        modalStatusEspecial=new bootstrap.Modal(document.getElementById('modalStatusEspecial'));
+        
+        const savedTime=sessionStorage.getItem(SESSION_KEY);
         sessionStartTime = savedTime ? new Date(savedTime) : new Date();
-        if (!savedTime) sessionStorage.setItem(SESSION_KEY, sessionStartTime.toISOString());
+        if(!savedTime) sessionStorage.setItem(SESSION_KEY, sessionStartTime.toISOString());
     });
 
-    function encerrarSessao() { sessionStorage.removeItem(SESSION_KEY); window.location.href = "/"; }
-    function filtrarTabela() { const t = document.getElementById('filtroTabela').value.toLowerCase(); document.querySelectorAll('.linha-volume').forEach(l => { l.style.display = l.querySelector('.texto-filtro').innerText.toLowerCase().includes(t) ? '' : 'none'; }); }
-
-    // OBS
-    function abrirObs(btn) {
-        document.getElementById('obsVolId').value = btn.dataset.id;
-        document.getElementById('obsVolTitulo').innerText = btn.dataset.num;
-        document.getElementById('obsTexto').value = btn.dataset.obs;
-        modalObs.show();
+    // ─── Utilidades ───
+    function encerrarSessao() { sessionStorage.removeItem(SESSION_KEY); window.location.href="/"; }
+    function filtrarTabela() { const t=document.getElementById('filtroTabela').value.toLowerCase(); document.querySelectorAll('.linha-volume').forEach(l=>{ l.style.display=l.querySelector('.texto-filtro').innerText.toLowerCase().includes(t)?'':'none'; }); }
+    
+    /** REQ-03: Formata ISO string para dd/mm/aa - hh:mm */
+    function formatarDataBRT(isoStr) {
+        if (!isoStr || isoStr === '-') return '-';
+        try {
+            const dt = new Date(isoStr);
+            if (isNaN(dt.getTime())) return isoStr;
+            const d = dt.getDate().toString().padStart(2,'0');
+            const m = (dt.getMonth()+1).toString().padStart(2,'0');
+            const y = dt.getFullYear().toString().slice(-2);
+            const h = dt.getHours().toString().padStart(2,'0');
+            const min = dt.getMinutes().toString().padStart(2,'0');
+            return `${d}/${m}/${y} - ${h}:${min}`;
+        } catch(e) { return isoStr; }
     }
-    async function salvarObs() { const id = document.getElementById('obsVolId').value; const txt = document.getElementById('obsTexto').value; await fetch('/api/observacao', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ volume_id: id, texto: txt }) }); modalObs.hide(); window.location.reload(); }
 
-    // RECEBIMENTO E DESFAZER
+    // ─── OBSERVAÇÕES DETALHADAS (v4) ───
+    async function abrirObs(btn) { 
+        const volId = btn.dataset.id;
+        document.getElementById('obsVolId').value = volId;
+        document.getElementById('obsVolTitulo').innerText = btn.dataset.num;
+        document.getElementById('txtNovoComentario').value = '';
+        cancelarEdicaoFixa();
+        await carregarDetalhesObs(volId);
+        modalObs.show(); 
+    }
+
+    async function carregarDetalhesObs(volId) {
+        try {
+            const res = await fetch(`/api/volume/${volId}/observacoes`);
+            const data = await res.json();
+
+            // 1. Renderizar Caixas
+            const tbody = document.getElementById('tblCaixasRastreioBody');
+            tbody.innerHTML = '';
+            data.caixas.forEach(c => {
+                let statusBadge = '<span class="badge bg-secondary">Pendente</span>';
+                let det = '-';
+                if (c.status === 'RECEBIDA') {
+                    statusBadge = '<span class="badge bg-success">Recebida</span>';
+                    det = `${c.usuario_conferente}<br><span class="text-muted small">${formatarDataBRT(c.data_hora_recepcao)}</span>`;
+                } else if (c.status === 'RETIRADO POR OUTRA PESSOA') {
+                    statusBadge = '<span class="badge bg-danger">Retirada</span>';
+                    det = `Retirador: ${c.retirado_por || '-'}`;
+                } else if (c.motivo_nao_recebido) {
+                    statusBadge = '<span class="badge bg-warning text-dark">Não Rec.</span>';
+                    det = `Motivo: ${c.motivo_nao_recebido}`;
+                }
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="fw-bold">Cx ${c.numero_caixa}</td>
+                        <td>${statusBadge}</td>
+                        <td>${det}</td>
+                    </tr>
+                `;
+            });
+
+            // 2. Renderizar Info Fixas
+            document.getElementById('lblFixoRetiradoBy').innerText = data.info_fixas.retirado_por || '-';
+            document.getElementById('lblFixoMotivo').innerText = data.info_fixas.motivo_nao_recebido || '-';
+            
+            document.getElementById('txtFixoRetiradoBy').value = data.info_fixas.retirado_por || '';
+            document.getElementById('txtFixoMotivo').value = data.info_fixas.motivo_nao_recebido || '';
+
+            // 3. Renderizar Comentários Livres
+            const list = document.getElementById('lstComentarios');
+            list.innerHTML = '';
+            if (data.comentarios.length === 0) {
+                list.innerHTML = '<div class="text-muted text-center py-3 small">Nenhum comentário manual.</div>';
+            } else {
+                data.comentarios.forEach(c => {
+                    // Botão Excluir (apenas para o autor ou admin)
+                    let btnExcluir = '';
+                    if (c.usuario === USUARIO_LOGADO) {
+                        btnExcluir = `<button class="btn btn-xs text-danger p-0 border-0 ms-2" onclick="excluirComentario(${c.id})"><i class="bi bi-trash"></i></button>`;
+                    }
+
+                    list.innerHTML += `
+                        <div class="list-group-item px-2 py-2 border-0 border-bottom">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-dark small">${c.usuario}</span>
+                                <span class="text-muted" style="font-size:0.7rem;">${c.timestamp_formatado} ${btnExcluir}</span>
+                            </div>
+                            <p class="m-0 text-secondary" style="font-size:0.8rem; word-break: break-all;">${c.texto}</p>
+                        </div>
+                    `;
+                });
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    async function adicionarComentario() {
+        const id = document.getElementById('obsVolId').value;
+        const txt = document.getElementById('txtNovoComentario').value.trim();
+        if (!txt) return;
+
+        try {
+            const res = await fetch('/api/observacao_manual/adicionar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({volume_id: id, texto: txt})
+            });
+            if (res.ok) {
+                document.getElementById('txtNovoComentario').value = '';
+                await carregarDetalhesObs(id);
+            } else {
+                const err = await res.json();
+                alert(err.msg || "Erro ao adicionar comentário.");
+            }
+        } catch(e) { alert("Erro de conexão."); }
+    }
+
+    async function excluirComentario(obsId) {
+        if (!confirm("Excluir esta observação permanente?")) return;
+        const id = document.getElementById('obsVolId').value;
+        try {
+            const res = await fetch('/api/observacao_manual/excluir', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({observacao_id: obsId})
+            });
+            if (res.ok) {
+                await carregarDetalhesObs(id);
+            } else {
+                const err = await res.json();
+                alert(err.msg || "Erro ao excluir.");
+            }
+        } catch(e) { alert("Erro de conexão."); }
+    }
+
+    // Edição de Info Fixas (Admin)
+    function habilitarEdicaoFixa() {
+        document.getElementById('lblFixoRetiradoBy').classList.add('d-none');
+        document.getElementById('lblFixoMotivo').classList.add('d-none');
+        
+        document.getElementById('txtFixoRetiradoBy').classList.remove('d-none');
+        document.getElementById('txtFixoMotivo').classList.remove('d-none');
+        
+        document.getElementById('divFixoBotoes').classList.remove('d-none');
+    }
+
+    function cancelarEdicaoFixa() {
+        document.getElementById('lblFixoRetiradoBy').classList.remove('d-none');
+        document.getElementById('lblFixoMotivo').classList.remove('d-none');
+        
+        document.getElementById('txtFixoRetiradoBy').classList.add('d-none');
+        document.getElementById('txtFixoMotivo').classList.add('d-none');
+        
+        document.getElementById('divFixoBotoes').classList.add('d-none');
+        document.getElementById('pwdFixoAdmin').value = '';
+    }
+
+    async function salvarEdicaoFixa() {
+        const id = document.getElementById('obsVolId').value;
+        const ret = document.getElementById('txtFixoRetiradoBy').value.trim();
+        const mot = document.getElementById('txtFixoMotivo').value.trim();
+        const pwd = document.getElementById('pwdFixoAdmin').value;
+
+        if (!pwd) return alert("Insira a senha do administrador para salvar.");
+
+        try {
+            const res = await fetch('/api/volume/info_fixas/atualizar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    volume_id: id,
+                    retirado_por: ret,
+                    motivo_nao_recebido: mot,
+                    senha_admin: pwd
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert("Dados de controle atualizados!");
+                cancelarEdicaoFixa();
+                await carregarDetalhesObs(id);
+                // Registrar reload ao fechar para atualizar cores
+                document.getElementById('modalObs').addEventListener('hidden.bs.modal', () => window.location.reload(), {once: true});
+            } else {
+                alert(data.msg || "Erro ao salvar.");
+            }
+        } catch(e) { alert("Erro de conexão."); }
+    }
+
+    // ─── RECEBIMENTO E DESFAZER ───
     async function processarRecebimento(vid, qtd, num) {
-        if (qtd === 1) { if (!confirm(`Confirmar recebimento do volume ${num}?`)) return; await fetch('/api/receber', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ volume_id: vid }) }); window.location.reload(); }
+        if(qtd===1) { if(!confirm(`Confirmar recebimento do volume ${num}?`)) return; await fetch('/api/receber',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:vid})}); window.location.reload(); }
         else abrirModal(vid, num, 'RECEBER');
     }
 
-    // NOVO: Receber Tudo (Shortcut)
     async function receberTudoVolume(vid, num) {
-        if (!confirm(`Confirma o recebimento de TODAS as caixas do volume ${num}?`)) return;
+        if(!confirm(`Confirma o recebimento de TODAS as caixas do volume ${num}?`)) return;
         try {
-            const res = await fetch('/api/receber_rapido_volume', { // Reutiliza a rota que marca tudo como recebido
+            const res = await fetch('/api/receber_rapido_volume', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ volume_id: vid })
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({volume_id: vid})
             });
-            if (res.ok) window.location.reload();
+            if(res.ok) window.location.reload();
             else alert("Erro ao processar.");
-        } catch (e) { alert("Erro de conexão."); }
+        } catch(e) { alert("Erro de conexão."); }
     }
 
     async function processarDesfazer(vid, qtd, num, btn) {
@@ -448,33 +559,60 @@
             const s = prompt("🔒 DESFAZER ANTIGO\n\nRequer senha de administrador:");
             if (s !== "pitaco" && s !== "admin123") return alert("Senha incorreta.");
         } else {
-            if (!confirm("Desfazer recebimento atual?")) return;
+            if(!confirm("Desfazer recebimento atual?")) return;
         }
-        if (qtd === 1) { await fetch('/api/desfazer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ volume_id: vid }) }); window.location.reload(); }
+        if(qtd===1) { await fetch('/api/desfazer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:vid})}); window.location.reload(); }
         else abrirModal(vid, num, 'DESFAZER');
     }
 
-    async function abrirModal(vid, num, modo) {
-        const h = document.getElementById('modalHeader');
-        h.className = modo === 'RECEBER' ? 'modal-header bg-success text-white border-bottom-0' : 'modal-header bg-danger text-white border-bottom-0';
-        document.getElementById('modalTitulo').innerText = modo === 'RECEBER' ? "Receber Caixas" : "Desfazer Caixas";
-        const c = document.getElementById('listaCaixasContainer'); c.innerHTML = 'Loading...';
-        modalCaixas.show();
-        const res = await fetch('/api/obter_caixas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ volume_id: vid }) });
-        const caixas = await res.json();
-        c.innerHTML = '';
-        caixas.forEach(cx => {
-            const isRec = cx.status === 'RECEBIDA';
-            let en = (modo === 'RECEBER' && !isRec) || (modo === 'DESFAZER' && isRec);
-            const l = document.createElement('label');
-            l.className = `list-group-item d-flex gap-3 py-3 ${en ? 'list-group-item-action pointer' : 'bg-light text-muted'}`;
-            l.innerHTML = `<input class="form-check-input" type="checkbox" ${!en ? 'disabled' : ''} ${isRec && modo === 'RECEBER' ? 'checked' : ''} onchange="acaoCaixa(${vid},${cx.numero_caixa},this)"><span>Caixa ${cx.numero_caixa}</span>`;
-            c.appendChild(l);
-        });
-    }
-    async function acaoCaixa(vid, n, cb) { cb.disabled = true; const ep = cb.closest('label').classList.contains('bg-light') ? '/api/desfazer_caixa' : '/api/receber_caixa'; /*Simplificado*/ const endpoint = cb.checked ? '/api/receber_caixa' : '/api/desfazer_caixa'; const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ volume_id: vid, numero_caixa: n }) }); if (res.ok) document.getElementById('modalCaixas').addEventListener('hidden.bs.modal', () => window.location.reload(), { once: true }); }
+    // ─── MODAL CAIXAS (REQ-02: conferente individual) ───
+    async function abrirModal(vid, num, modo){ 
+        const h=document.getElementById('modalHeader'); 
+        h.className=modo==='RECEBER'?'modal-header bg-success text-white border-bottom-0':'modal-header bg-danger text-white border-bottom-0'; 
+        document.getElementById('modalTitulo').innerText=modo==='RECEBER'?"Receber Caixas":"Desfazer Caixas"; 
+        const c=document.getElementById('listaCaixasContainer'); c.innerHTML='Loading...'; 
+        modalCaixas.show(); 
+        const res=await fetch('/api/obter_caixas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:vid})}); 
+        const caixas=await res.json(); 
+        c.innerHTML=''; 
+        caixas.forEach(cx=>{ 
+            const isRec = cx.status==='RECEBIDA'; 
+            const isRet = cx.status==='RETIRADO POR OUTRA PESSOA';
+            const isNaoRec = cx.motivo_nao_recebido ? true : false;
+            let en = (modo==='RECEBER' && !isRec && !isRet && !isNaoRec) || (modo==='DESFAZER' && (isRec || isRet || isNaoRec)); 
+            
+            const l=document.createElement('label'); 
+            l.className=`list-group-item d-flex gap-3 py-3 align-items-center ${en?'list-group-item-action pointer':'bg-light text-muted'}`; 
+            
+            // REQ-02: Mostrar conferente individual de cada caixa
+            let infoExtra = '';
+            if (isRec && cx.usuario_conferente) {
+                infoExtra = `<span class="caixa-conferente ms-auto">${cx.usuario_conferente} • ${formatarDataBRT(cx.data_hora_recepcao)}</span>`;
+            } else if (isRet && cx.retirado_por) {
+                infoExtra = `<span class="caixa-retirado ms-auto"><i class="bi bi-person-x me-1"></i>${cx.retirado_por}</span>`;
+            } else if (isNaoRec) {
+                infoExtra = `<span class="caixa-retirado ms-auto text-warning"><i class="bi bi-exclamation-circle me-1"></i>Não Rec: ${cx.motivo_nao_recebido}</span>`;
+            }
 
-    // Extramanifesto
+            // Botão ⚠️ para marcar status especial na caixa individual
+            let btnEspecial = '';
+            if (modo==='RECEBER' && !isRec && !isRet && !isNaoRec) {
+                btnEspecial = `<button class="btn btn-sm btn-outline-warning border-0 p-1" onclick="event.preventDefault(); abrirStatusEspecial(${vid}, ${cx.numero_caixa}, '${cx.numero_caixa}')" title="Status especial"><i class="bi bi-exclamation-triangle"></i></button>`;
+            }
+            
+            l.innerHTML=`<input class="form-check-input" type="checkbox" ${!en?'disabled':''} ${(isRec||isRet||isNaoRec)&&modo==='DESFAZER'?'checked':''} ${isRec&&modo==='RECEBER'?'checked':''} onchange="acaoCaixa(${vid},${cx.numero_caixa},this)"><span>Caixa ${cx.numero_caixa}</span>${infoExtra}${btnEspecial}`; 
+            c.appendChild(l); 
+        }); 
+    }
+
+    async function acaoCaixa(vid,n,cb){ 
+        cb.disabled=true; 
+        const endpoint = cb.checked ? '/api/receber_caixa' : '/api/desfazer_caixa'; 
+        const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:vid,numero_caixa:n})}); 
+        if(res.ok) document.getElementById('modalCaixas').addEventListener('hidden.bs.modal',()=>window.location.reload(),{once:true}); 
+    }
+
+    // ─── EXTRAMANIFESTO ───
     function abrirModalExtra() {
         document.getElementById('extraNumero').value = "";
         document.getElementById('extraRemetente').value = "";
@@ -485,101 +623,139 @@
         const num = document.getElementById('extraNumero').value;
         const rem = document.getElementById('extraRemetente').value || "NÃO IDENTIFICADO";
         const qtd = document.getElementById('extraQtd').value;
-        if (!num || !qtd) return alert("Preencha os campos obrigatórios.");
-
+        if(!num || !qtd) return alert("Preencha os campos obrigatórios.");
+        
         try {
             const res = await fetch('/api/adicionar_extra_conferencia', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ manifesto_id: MANIFESTO_ID, numero_volume: num, remetente: rem, quantidade: qtd })
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({manifesto_id: MANIFESTO_ID, numero_volume: num, remetente: rem, quantidade: qtd})
             });
             if (res.ok) { alert("Volume adicionado!"); modalExtra.hide(); window.location.reload(); }
             else alert("Erro ao adicionar.");
-        } catch (e) { alert("Erro de conexão."); }
+        } catch(e) { alert("Erro de conexão."); }
     }
 
-    // EDIÇÃO DE EXTRAMANIFESTO
-    function abrirModalEditarExtra(volumeId, numeroVolume, remetente, quantidade) {
-        document.getElementById('editExtraId').value = volumeId;
-        document.getElementById('editExtraSenha').value = "";
-        document.getElementById('editExtraNumero').value = numeroVolume;
-        document.getElementById('editExtraRemetente').value = remetente;
-        document.getElementById('editExtraQtd').value = quantidade;
-        modalEditarExtra.show();
+    // ═══════════════════════════════════════════════════
+    // REQ-01: STATUS ESPECIAL
+    // ═══════════════════════════════════════════════════
+
+    async function abrirStatusEspecial(volumeId, caixaNum, titulo) {
+        document.getElementById('statusVolId').value = volumeId;
+        document.getElementById('statusCaixaNum').value = caixaNum || '';
+        document.getElementById('statusVolTitulo').innerText = caixaNum ? `Caixa ${titulo} do volume` : `Volume ${titulo}`;
+        
+        document.getElementById('statusTipo').value = '';
+        document.getElementById('retiradoPorManualTexto').value = '';
+        document.getElementById('motivoNaoRecebidoTexto').value = '';
+        
+        document.getElementById('divRetiradoPorManual').classList.add('d-none');
+        document.getElementById('divMotivoNaoRecebido').classList.add('d-none');
+
+        modalStatusEspecial.show();
     }
 
-    async function salvarEdicaoExtra() {
-        const volumeId = document.getElementById('editExtraId').value;
-        const senha = document.getElementById('editExtraSenha').value;
-        const numeroVolume = document.getElementById('editExtraNumero').value;
-        const remetente = document.getElementById('editExtraRemetente').value || "NÃO IDENTIFICADO";
-        const quantidade = document.getElementById('editExtraQtd').value;
+    function toggleStatusCampos() {
+        const tipo = document.getElementById('statusTipo').value;
+        
+        const divRetirado = document.getElementById('divRetiradoPorManual');
+        const divMotivo = document.getElementById('divMotivoNaoRecebido');
+        
+        divRetirado.classList.add('d-none');
+        divMotivo.classList.add('d-none');
 
-        if (!senha) return alert("Senha é obrigatória!");
-        if (!numeroVolume || !quantidade) return alert("Preencha os campos obrigatórios.");
+        if (tipo === 'RETIRADO POR OUTRA PESSOA') {
+            divRetirado.classList.remove('d-none');
+        } else if (tipo === 'NÃO RECEBIDO') {
+            divMotivo.classList.remove('d-none');
+        }
+    }
+
+    async function salvarStatusEspecial() {
+        const volumeId = document.getElementById('statusVolId').value;
+        const caixaNum = document.getElementById('statusCaixaNum').value || null;
+        const statusTipo = document.getElementById('statusTipo').value;
+        
+        if (!statusTipo) return alert("Selecione um status.");
+
+        let retiradoPor = '';
+        let motivoNaoRecebido = '';
+
+        if (statusTipo === 'RETIRADO POR OUTRA PESSOA') {
+            retiradoPor = document.getElementById('retiradoPorManualTexto').value.trim();
+            if (!retiradoPor) return alert("Informe quem retirou o material.");
+        } else if (statusTipo === 'NÃO RECEBIDO') {
+            motivoNaoRecebido = document.getElementById('motivoNaoRecebidoTexto').value.trim();
+            if (!motivoNaoRecebido) return alert("Informe o motivo do não recebimento.");
+        }
+
+        if (!confirm(`Confirmar marcação como "${statusTipo}"?`)) return;
 
         try {
-            const res = await fetch(`/api/atualizar_extra/${volumeId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ senha, numero_volume: numeroVolume, remetente, quantidade })
+            const payload = {
+                volume_id: parseInt(volumeId),
+                numero_caixa: caixaNum ? parseInt(caixaNum) : null,
+                status: statusTipo,
+                retirado_por: retiradoPor,
+                motivo_nao_recebido: motivoNaoRecebido
+            };
+            const res = await fetch('/api/status_especial', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
             });
-
             const data = await res.json();
-
-            if (res.status === 403) {
-                return alert("❌ Senha incorreta!");
-            }
-
             if (res.ok) {
-                alert(`✅ Volume atualizado! ${data.alteracoes} campo(s) alterado(s).`);
-                modalEditarExtra.hide();
+                modalStatusEspecial.hide();
                 window.location.reload();
             } else {
-                alert("Erro: " + (data.msg || "Não foi possível atualizar."));
+                alert(data.msg || "Erro ao processar.");
             }
-        } catch (e) {
-            alert("Erro de conexão.");
-        }
-    }
-
-    // HISTÓRICO DE EDIÇÕES
-    async function abrirModalHistoricoExtra(volumeId, numeroVolume) {
-        document.getElementById('historicoTitulo').innerText = numeroVolume;
-        const tbody = document.getElementById('tabelaHistorico');
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><div class="spinner-border"></div></td></tr>';
-        modalHistoricoExtra.show();
-
-        try {
-            const res = await fetch(`/api/historico_extra/${volumeId}`);
-            const historico = await res.json();
-
-            tbody.innerHTML = '';
-
-            if (historico.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Nenhuma edição registrada.</td></tr>';
-                return;
-            }
-
-            historico.forEach(h => {
-                const tr = document.createElement('tr');
-                const dataFormatada = h.data_hora ? new Date(h.data_hora).toLocaleString('pt-BR') : '-';
-                const campoFormatado = h.campo_alterado === 'numero_volume' ? 'Número' :
-                    h.campo_alterado === 'remetente' ? 'Remetente' :
-                        h.campo_alterado === 'quantidade_expedida' ? 'Quantidade' : h.campo_alterado;
-
-                tr.innerHTML = `
-                    <td class="small">${dataFormatada}</td>
-                    <td class="fw-bold">${h.usuario}</td>
-                    <td><span class="badge bg-info">${campoFormatado}</span></td>
-                    <td class="text-danger">${h.valor_anterior}</td>
-                    <td class="text-success">${h.valor_novo}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        } catch (e) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-danger text-center">Erro ao carregar histórico.</td></tr>';
-        }
+        } catch(e) { alert("Erro de conexão."); }
     }
 </script>
+
+<!-- Modal Galeria OCR -->
+<div class="modal fade" id="modalGaleriaOCR" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 border-0 bg-dark text-white shadow-lg">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-info"><i class="bi bi-file-earmark-image me-2"></i>Manifesto Escaneado</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center position-relative p-4">
+                <div id="galeriaLoading" class="text-center py-5">
+                    <div class="spinner-border text-info" role="status"></div>
+                    <p class="mt-2 text-muted small">Carregando imagens do arquivo...</p>
+                </div>
+                
+                <div id="galeriaConteudo" class="d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <span id="galeriaPaginaIndicador" class="badge bg-secondary py-2 px-3 fs-6">Página 1 de 1</span>
+                        <div class="btn-group shadow-sm">
+                            <button class="btn btn-outline-light btn-sm" onclick="zoomImagem(-0.1)" title="Diminuir Zoom"><i class="bi bi-zoom-out"></i></button>
+                            <button class="btn btn-outline-light btn-sm" onclick="resetZoom()" title="Resetar Zoom">100%</button>
+                            <button class="btn btn-outline-light btn-sm" onclick="zoomImagem(0.1)" title="Aumentar Zoom"><i class="bi bi-zoom-in"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="position-relative overflow-hidden bg-black rounded-3 d-flex align-items-center justify-content-center" style="height: 60vh; min-height: 350px;">
+                        <img id="galeriaImagem" src="" class="img-fluid rounded-3" style="max-height: 100%; transition: transform 0.2s ease; cursor: grab;" alt="Página do Manifesto">
+                        
+                        <!-- Controles Laterais (Setas) -->
+                        <button class="btn btn-dark opacity-75 position-absolute start-0 top-50 translate-middle-y ms-2 rounded-circle btn-navegacao" onclick="paginaAnterior()" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-chevron-left fs-4"></i>
+                        </button>
+                        <button class="btn btn-dark opacity-75 position-absolute end-0 top-50 translate-middle-y me-2 rounded-circle btn-navegacao" onclick="proximaPagina()" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-chevron-right fs-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="/static/css/scanner.css">
+<script src="/static/js/scan_viewer.js"></script>
 {% endblock %}

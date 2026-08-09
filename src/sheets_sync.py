@@ -13,17 +13,13 @@ import random
 import warnings
 from datetime import datetime
 import os
-from dotenv import load_dotenv
-
-# Carrega variáveis de ambiente
-load_dotenv()
 
 # Limpa avisos
 warnings.filterwarnings("ignore", category=UserWarning, module="gspread")
 
 # ================= CONFIGURAÇÃO =================
-# ID da Planilha (configure no arquivo .env)
-SPREADSHEET_ID = os.getenv('GOOGLE_SPREADSHEET_ID', '')
+# ID da Planilha (MANTENHA O SEU ID AQUI)
+SPREADSHEET_ID = "COLE_SEU_ID_GOOGLSHEETS_AQUI" # <--- COLOQUE SEU ID AQUI NOVAMENTE SE NECESSÁRIO
 CREDENTIALS_FILE = Path(__file__).resolve().parent.parent / "credentials.json"
 
 SCOPE = [   
@@ -120,10 +116,11 @@ def agendar_tarefa(func, *args):
 # ================= UTILITÁRIOS DE LAYOUT =================
 
 def _formatar_data(data_iso):
+    """Formata ISO datetime para dd/mm/yy - HH:MM (REQ-03)."""
     if not data_iso: return "-"
     try:
         dt = datetime.fromisoformat(data_iso)
-        return dt.strftime("%d/%m/%y %H:%M")
+        return dt.strftime("%d/%m/%y - %H:%M")
     except ValueError:
         return data_iso
 
@@ -288,7 +285,12 @@ def sincronizar_volume(numero_manifesto: str, volume_dados: dict):
     qtd_str = f"{volume_dados.get('quantidade_recebida', 0)} / {volume_dados.get('quantidade_expedida', 1)}"
     status = volume_dados.get('status', 'NÃO RECEBIDO')
     data_rec = _formatar_data(volume_dados.get('data_hora_ultima_recepcao'))
-    user_rec = volume_dados.get('usuario_recepcao', '') or "-"
+    
+    # REQ-01: Se retirado, exibir nome de quem retirou na coluna "Recebido Por"
+    if status == 'RETIRADO POR OUTRA PESSOA' and volume_dados.get('retirado_por'):
+        user_rec = f"RET: {volume_dados['retirado_por']}"
+    else:
+        user_rec = volume_dados.get('usuario_recepcao', '') or "-"
     
     row_data = [
         status,
@@ -306,17 +308,13 @@ def sincronizar_volume(numero_manifesto: str, volume_dados: dict):
     
     if num_vol_busca in col_volumes:
         target_row = col_volumes.index(num_vol_busca) + 1
-        # CORREÇÃO: Argumentos posicionais
         ws.update(f'A{target_row}:G{target_row}', [row_data])
     else:
         ws.append_row(row_data)
         target_row = len(col_volumes) + 1 if col_volumes else 1
-        # Ajuste se for a primeira linha pós cabeçalho
         if target_row <= 3: target_row = len(ws.col_values(1)) 
 
     atualizar_status_visual(ws, target_row, status)
-    # Não chamamos _definir_layout_colunas aqui para ganhar performance, 
-    # pois já foi definido na criação
 
 @api_retry
 def atualizar_status_cabecalho(numero_manifesto: str, novo_status: str):
@@ -359,6 +357,8 @@ def atualizar_status_visual(worksheet, row_num, status):
         bg_color = {'red': 1.0, 'green': 0.98, 'blue': 0.85}
     elif status == 'VOLUME EXTRA':
         bg_color = {'red': 0.9, 'green': 0.85, 'blue': 1.0}
+    elif status == 'RETIRADO POR OUTRA PESSOA':
+        bg_color = {'red': 1.0, 'green': 0.85, 'blue': 0.85}  # Rosa claro
     elif status == 'NÃO RECEBIDO':
         bg_color = {'red': 1.0, 'green': 0.95, 'blue': 0.95}
     
