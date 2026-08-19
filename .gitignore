@@ -16,4 +16,10 @@ uploads/
 .idea/
 .gemini/
 tests/test_ocr_database.db
+tests/test_busca_database.db
+tests/test_database.db
+tests/test_fase6_database.db
+tests/test_p1_fixes.db
+tests/*.db
 credentials.json
+scratch/

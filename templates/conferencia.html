@@ -6,6 +6,7 @@
     .row-completo { background-color: #f0fdf4 !important; }
     .row-parcial { background-color: #fefce8 !important; }
     .row-retirado { background-color: #fff1f2 !important; }
+    .row-nao-recebido { background-color: #fff7ed !important; }
     
     /* Botões UX Mobile */
     .btn-action { 
@@ -57,8 +58,13 @@
 <div class="card shadow-sm border-0 rounded-4 mb-4">
     <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3 p-4">
         <div>
-            <h5 class="mb-1 fw-bold text-dark">{{ m.numero_manifesto }}</h5>
-            <small class="text-muted d-block"><i class="bi bi-person-circle me-1"></i> Conferente: <strong>{{ current_user.nome }}</strong></small>
+            <h5 class="mb-1 fw-bold text-dark">{{ m.numero_manifesto }} <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-2 fs-6">Conferência — {{ secao_exibida }}</span></h5>
+            <small class="text-muted d-block">
+                <i class="bi bi-person-circle me-1"></i> Conferente: <strong>{{ current_user.nome }}</strong>
+                {% if is_readonly %}
+                    <span class="badge bg-info ms-2"><i class="bi bi-eye-fill me-1"></i> Modo Leitura</span>
+                {% endif %}
+            </small>
         </div>
         <div class="d-flex gap-2 flex-wrap justify-content-end">
              {% if m.origem == 'OCR_MOBILE' %}
@@ -67,10 +73,18 @@
                 <i class="bi bi-file-earmark-image me-2"></i>Ver Escaneado
              </button>
              {% endif %}
+             <!-- Botão Histórico (Logs) — visível somente para admins -->
+             {% if current_user.role in ['super_admin', 'admin_tsre', 'admin_can', 'admin'] %}
+             <button class="btn btn-outline-info fw-bold shadow-sm" onclick="abrirModalLogs({{ m.id }})">
+                <i class="bi bi-journal-text me-2"></i>Histórico (Logs)
+             </button>
+             {% endif %}
+             {% if not is_readonly %}
              <!-- Botão Extramanifesto -->
              <button class="btn btn-warning text-dark fw-bold shadow-sm" onclick="abrirModalExtra()">
                 <i class="bi bi-plus-circle-fill me-2"></i>Extramanifesto
             </button>
+            {% endif %}
             <button class="btn btn-outline-secondary fw-bold border-2" onclick="encerrarSessao()">
                 <i class="bi bi-arrow-left"></i> Voltar
             </button>
@@ -102,26 +116,47 @@
                 </thead>
                 <tbody>
                     {% for v in volumes %}
+                    {% set is_rec = (v.status == 'COMPLETO' or v.status == 'TOTALMENTE RECEBIDO') %}
+                    {% set is_ret = (v.status == 'RETIRADO POR OUTRA PESSOA') %}
+                    {% set is_nao_rec = (v.status == 'NÃO RECEBIDO') %}
+
                     {% set row_class = 'bg-white' %}
-                    {% if v.status == 'COMPLETO' %} {% set row_class = 'row-completo' %}
+                    {% if is_rec %} {% set row_class = 'row-completo' %}
                     {% elif v.status == 'PARCIAL' %} {% set row_class = 'row-parcial' %}
-                    {% elif v.status == 'RETIRADO POR OUTRA PESSOA' %} {% set row_class = 'row-retirado' %}
+                    {% elif is_ret %} {% set row_class = 'row-retirado' %}
+                    {% elif is_nao_rec %} {% set row_class = 'row-nao-recebido' %}
                     {% endif %}
                     
                     <tr class="{{ row_class }} linha-volume" data-timestamp="{{ v.data_hora_ultima_recepcao or '' }}">
                         <td class="text-center d-none d-sm-table-cell">
-                            {% if v.status == 'COMPLETO' %}<i class="bi bi-check-circle-fill text-success fs-5"></i>
-                            {% elif v.status == 'PARCIAL' %}<i class="bi bi-exclamation-circle-fill text-warning fs-5"></i>
-                            {% elif v.status == 'RETIRADO POR OUTRA PESSOA' %}<i class="bi bi-person-x-fill text-danger fs-5"></i>
+                            {% if is_rec %}<i class="bi bi-check-circle-fill text-success fs-5" title="Recebido"></i>
+                            {% elif v.status == 'PARCIAL' %}<i class="bi bi-exclamation-circle-fill text-warning fs-5" title="Parcial"></i>
+                            {% elif is_ret %}<i class="bi bi-person-x-fill text-danger fs-5" title="Retirado"></i>
+                            {% elif is_nao_rec %}<i class="bi bi-x-circle-fill text-warning fs-5" title="Não Recebido"></i>
                             {% else %}<i class="bi bi-circle text-muted fs-5"></i>{% endif %}
                         </td>
                         <td class="text-start ps-4">
-                            <div class="fw-bold text-dark texto-filtro fs-6">{{ v.numero_volume }}</div>
+                            <div class="fw-bold text-dark texto-filtro fs-6">
+                                {{ v.numero_volume }}
+                                {% if v.secao_extra %}
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill ms-1" style="font-size:0.75rem;" title="Volume Extra adicionado por {{ v.secao_extra }}">
+                                        <i class="bi bi-plus-circle-fill me-1"></i>Extra {{ v.secao_extra }}
+                                    </span>
+                                {% endif %}
+                            </div>
                             <small class="text-muted texto-filtro">{{ v.remetente }}</small>
+                            {% if secao_exibida == 'TSRE' and v.can_conferido %}
+                                <div class="mt-1">
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill" style="font-size:0.75rem;" title="Conferido pelo CAN: {{ v.can_status }} por {{ v.can_recebedor }}">
+                                        <i class="bi bi-airplane-fill me-1"></i>CAN: {{ v.can_status }}
+                                    </span>
+                                </div>
+                            {% endif %}
                             <div class="d-block d-sm-none mt-1">
-                                {% if v.status == 'COMPLETO' %} <span class="badge bg-success-subtle text-success">Recebido</span>
+                                {% if is_rec %} <span class="badge bg-success-subtle text-success">Recebido</span>
                                 {% elif v.status == 'PARCIAL' %} <span class="badge bg-warning-subtle text-warning-emphasis">Parcial</span>
-                                {% elif v.status == 'RETIRADO POR OUTRA PESSOA' %} <span class="badge bg-danger-subtle text-danger">Retirado</span>
+                                {% elif is_ret %} <span class="badge bg-danger-subtle text-danger">Retirado</span>
+                                {% elif is_nao_rec %} <span class="badge bg-warning-subtle text-warning-emphasis">Não Recebido</span>
                                 {% endif %}
                             </div>
                             {% if v.data_hora_ultima_recepcao %}
@@ -149,34 +184,38 @@
                                     {% if v.observacao %}<i class="bi bi-pencil-fill"></i>{% else %}<i class="bi bi-pencil"></i>{% endif %} Obs
                                 </button>
                                 
-                                {% if v.status == 'RETIRADO POR OUTRA PESSOA' %}
-                                    <!-- Volume retirado: apenas desfazer -->
-                                    <button class="btn btn-action btn-undo" onclick="processarDesfazer({{ v.id }}, {{ v.quantidade_expedida }}, '{{ v.numero_volume }}', this)">
-                                        <i class="bi bi-arrow-counterclockwise"></i> Desfazer
-                                    </button>
-                                {% elif v.status != 'COMPLETO' %}
-                                    {% if v.quantidade_expedida > 1 %}
-                                        <!-- Múltiplas Caixas: Botão Receber Individual + Receber Tudo + Status Especial -->
-                                        <button class="btn btn-action btn-rec" onclick="abrirModal({{ v.id }}, '{{ v.numero_volume }}', 'RECEBER')">
-                                            <i class="bi bi-boxes"></i> Caixas
-                                        </button>
-                                        <button class="btn btn-action btn-all" onclick="receberTudoVolume({{ v.id }}, '{{ v.numero_volume }}')">
-                                            <i class="bi bi-check-all"></i> Tudo
+                                {% if is_readonly %}
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill py-2 px-3">Modo Leitura</span>
+                                {% elif v.pode_operar is defined and not v.pode_operar %}
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill py-2 px-3">
+                                        {% if v.secao_extra %}Extra {{ v.secao_extra }}{% else %}Outro Destinatário{% endif %}
+                                    </span>
+                                {% else %}
+                                    {% if is_ret or is_nao_rec or is_rec %}
+                                        <!-- Volume resolvido/tratado (Recebido, Retirado ou Não Recebido): Ação é Desfazer -->
+                                        <button class="btn btn-action btn-undo" onclick="processarDesfazer({{ v.id }}, {{ v.quantidade_expedida }}, '{{ v.numero_volume }}', this)">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Desfazer
                                         </button>
                                     {% else %}
-                                        <!-- Caixa Única: Recebimento Direto -->
-                                        <button class="btn btn-action btn-rec" onclick="processarRecebimento({{ v.id }}, 1, '{{ v.numero_volume }}')">
-                                            <i class="bi bi-box-seam-fill"></i> Receber
+                                        {% if v.quantidade_expedida > 1 %}
+                                            <!-- Múltiplas Caixas: Botão Receber Individual + Receber Tudo + Status Especial -->
+                                            <button class="btn btn-action btn-rec" onclick="abrirModal({{ v.id }}, '{{ v.numero_volume }}', 'RECEBER')">
+                                                <i class="bi bi-boxes"></i> Caixas
+                                            </button>
+                                            <button class="btn btn-action btn-all" onclick="receberTudoVolume({{ v.id }}, '{{ v.numero_volume }}')">
+                                                <i class="bi bi-check-all"></i> Tudo
+                                            </button>
+                                        {% else %}
+                                            <!-- Caixa Única: Recebimento Direto -->
+                                            <button class="btn btn-action btn-rec" onclick="processarRecebimento({{ v.id }}, 1, '{{ v.numero_volume }}')">
+                                                <i class="bi bi-box-seam-fill"></i> Receber
+                                            </button>
+                                        {% endif %}
+                                        <!-- Botão Status Especial (REQ-01) -->
+                                        <button class="btn btn-action btn-warn" style="width:auto; min-width:42px; flex:0;" onclick="abrirStatusEspecial({{ v.id }}, null, '{{ v.numero_volume }}', {{ v.quantidade_expedida }})" title="Status Especial">
+                                            <i class="bi bi-exclamation-triangle-fill"></i>
                                         </button>
                                     {% endif %}
-                                    <!-- Botão Status Especial (REQ-01) -->
-                                    <button class="btn btn-action btn-warn" style="width:auto; min-width:42px; flex:0;" onclick="abrirStatusEspecial({{ v.id }}, null, '{{ v.numero_volume }}')" title="Status Especial">
-                                        <i class="bi bi-exclamation-triangle-fill"></i>
-                                    </button>
-                                {% else %}
-                                    <button class="btn btn-action btn-undo" onclick="processarDesfazer({{ v.id }}, {{ v.quantidade_expedida }}, '{{ v.numero_volume }}', this)">
-                                        <i class="bi bi-arrow-counterclockwise"></i> Desfazer
-                                    </button>
                                 {% endif %}
                             </div>
                         </td>
@@ -188,7 +227,7 @@
     </div>
 </div>
 
-<!-- Modal Observação / Detalhes do Volume (v4) -->
+<!-- Modal Observações e Comentários (v4) -->
 <div class="modal fade" id="modalObs" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content rounded-4 border-0 shadow-lg">
@@ -199,38 +238,32 @@
             <div class="modal-body p-4">
                 <input type="hidden" id="obsVolId">
                 
-                <!-- Abas ou Seções -->
                 <div class="row g-4">
                     <!-- Esquerda: Rastreabilidade por Caixa e Dados Fixos -->
                     <div class="col-md-6 border-end">
                         <h6 class="fw-bold mb-3"><i class="bi bi-boxes me-2 text-secondary"></i>Rastreio de Caixas Individuais</h6>
-                        <div class="table-responsive mb-4" style="max-height: 220px;">
-                            <table class="table table-sm table-hover align-middle small">
+                        <div class="table-responsive mb-3" style="max-height: 180px;">
+                            <table class="table table-sm table-bordered small">
                                 <thead class="table-light">
                                     <tr>
                                         <th>Caixa</th>
                                         <th>Status</th>
-                                        <th>Por / Detalhe</th>
+                                        <th>Detalhe / Conferente</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tblCaixasRastreioBody">
-                                    <!-- Dinâmico -->
+                                <tbody id="tbObsCaixas">
                                 </tbody>
                             </table>
                         </div>
 
-                        <hr>
-
-                        <!-- Informações Fixas -->
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="fw-bold m-0"><i class="bi bi-lock-fill me-2 text-danger"></i>Informações de Controle (Fixo)</h6>
-                            <button class="btn btn-sm btn-link p-0 text-decoration-none text-danger fw-bold" onclick="habilitarEdicaoFixa()">
-                                <i class="bi bi-pencil-square"></i> Editar (Admin)
-                            </button>
-                        </div>
-                        <div class="bg-light p-3 rounded-3 small">
+                        <!-- Edição de Informações Fixas (Apenas Admin) -->
+                        <div class="p-3 bg-light rounded-3 border">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold small text-dark"><i class="bi bi-shield-lock me-1"></i>Controle de Entrega/Motivo</span>
+                                <button class="btn btn-xs btn-outline-primary" onclick="habilitarEdicaoFixa()"><i class="bi bi-pencil me-1"></i>Editar</button>
+                            </div>
                             <div class="mb-2">
-                                <span class="text-muted d-block">Quem retirou (se retirado):</span>
+                                <span class="text-muted d-block">Retirado Por (se entregue a terceiro):</span>
                                 <strong id="lblFixoRetiradoBy">-</strong>
                                 <input type="text" class="form-control form-control-sm d-none mt-1" id="txtFixoRetiradoBy">
                             </div>
@@ -260,7 +293,7 @@
 
                         <!-- Novo Comentário -->
                         <div class="input-group">
-                            <input type="text" class="form-control rounded-start-3" id="txtNovoComentario" placeholder="Escrever comentário..." maxlength="255">
+                            <input type="text" class="form-control rounded-start-3" id="txtNovoComentario" placeholder="Escrever comentário..." maxlength="255" onkeydown="if(event.key==='Enter'){event.preventDefault(); adicionarComentario();}">
                             <button class="btn btn-primary" onclick="adicionarComentario()"><i class="bi bi-send-fill"></i></button>
                         </div>
                     </div>
@@ -277,7 +310,53 @@
 <div class="modal fade" id="modalCaixas" tabindex="-1" data-bs-backdrop="static"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-4 border-0 shadow-lg"><div id="modalHeader" class="modal-header text-white border-bottom-0"><div><h5 class="modal-title fw-bold" id="modalTitulo"></h5></div><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body p-0"><div id="listaCaixasContainer" class="list-group list-group-flush"></div></div><div class="modal-footer border-top-0"><button class="btn btn-secondary btn-rounded" data-bs-dismiss="modal">Fechar</button></div></div></div></div>
 
 <!-- Modal Extramanifesto -->
-<div class="modal fade" id="modalExtra" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-4 border-0 shadow-lg"><div class="modal-header bg-warning bg-opacity-10 border-bottom-0"><h5 class="modal-title fw-bold text-dark"><i class="bi bi-plus-circle-fill me-2 text-warning"></i>Extramanifesto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-4"><form id="formExtra" onsubmit="return false;"><div class="mb-3"><label class="form-label fw-bold small">Número do Volume <span class="text-danger">*</span></label><input type="text" id="extraNumero" class="form-control rounded-3" required></div><div class="mb-3"><label class="form-label fw-bold small">Remetente</label><input type="text" id="extraRemetente" class="form-control rounded-3"></div><div class="mb-3"><label class="form-label fw-bold small">Quantidade</label><input type="number" id="extraQtd" class="form-control rounded-3" value="1" min="1" required></div></form></div><div class="modal-footer border-top-0 bg-light rounded-bottom-4"><button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-warning rounded-pill fw-bold px-4" onclick="salvarExtra()">Adicionar</button></div></div></div></div>
+<div class="modal fade" id="modalExtra" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-warning bg-opacity-10 border-bottom-0">
+                <h5 class="modal-title fw-bold text-dark">
+                    <i class="bi bi-plus-circle-fill me-2 text-warning"></i>Extramanifesto
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="formExtra" onsubmit="return false;">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Número do Volume <span class="text-danger">*</span></label>
+                        <input type="text" id="extraNumero" class="form-control rounded-3" required placeholder="Ex.: MAN-001/9001">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Remetente</label>
+                        <input type="text" id="extraRemetente" class="form-control rounded-3" placeholder="Nome do remetente (opcional)">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Quantidade</label>
+                        <input type="number" id="extraQtd" class="form-control rounded-3" value="1" min="1" required>
+                    </div>
+                    {% if current_user.secao == 'CAN' %}
+                    <!-- Campo de Destino: exibido apenas para o CAN -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Destino <span class="text-danger">*</span></label>
+                        <select id="extraDestino" class="form-select rounded-3" onchange="toggleDestinoOutro()" required>
+                            <option value="PAMA-LS">PAMA-LS — Envio TSRE</option>
+                            <option value="OUTRO">OUTRO — Apenas CAN</option>
+                        </select>
+                        <small class="text-muted">Se <strong>PAMA-LS</strong>, a TSRE verá o volume com badge <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill" style="font-size:0.7rem;">Extra CAN</span> para receber. Se <strong>OUTRO</strong>, fica apenas no CAN.</small>
+                    </div>
+                    <div class="mb-3 d-none" id="divDestinoOutro">
+                        <label class="form-label fw-bold small">Qual o destino? <span class="text-danger">*</span></label>
+                        <input type="text" id="extraDestinoOutroTexto" class="form-control rounded-3" placeholder="Informe o destino (ex.: PAMA-SP, CINDACTA, etc.)">
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+            <div class="modal-footer border-top-0 bg-light rounded-bottom-4">
+                <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning rounded-pill fw-bold px-4" onclick="salvarExtra()">Adicionar</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Modal Status Especial (REQ-01) -->
 <div class="modal fade" id="modalStatusEspecial" tabindex="-1">
@@ -290,7 +369,15 @@
             <div class="modal-body p-4">
                 <input type="hidden" id="statusVolId">
                 <input type="hidden" id="statusCaixaNum">
-                <p class="small text-muted fw-bold" id="statusVolTitulo"></p>
+                <p class="small text-muted fw-bold mb-3" id="statusVolTitulo"></p>
+
+                <!-- Seletor de Caixa (quando o volume possui mais de uma caixa) -->
+                <div class="mb-3 d-none" id="divStatusCaixaSelect">
+                    <label class="form-label fw-bold small text-dark">Caixa Afetada <span class="text-danger">*</span></label>
+                    <select class="form-select rounded-3" id="statusCaixaSelect">
+                        <!-- Carregado dinamicamente -->
+                    </select>
+                </div>
 
                 <div class="mb-3">
                     <label class="form-label fw-bold small text-dark">Novo Status <span class="text-danger">*</span></label>
@@ -328,6 +415,10 @@
     let modalCaixas, modalObs, modalExtra, modalStatusEspecial;
     const MANIFESTO_ID="{{ m.id }}"; const SESSION_KEY=`start_time_${MANIFESTO_ID}`; let sessionStartTime=null;
     const USUARIO_LOGADO="{{ current_user.nome }}";
+    const SECAO_USUARIO="{{ current_user.secao }}";
+    const SECAO_EXIBIDA="{{ secao_exibida or current_user.secao }}";
+    const ROLE_LOGADO="{{ current_user.role }}";
+    const IS_SUPER_ADMIN = {{ 'true' if current_user.role == 'super_admin' else 'false' }};
 
     document.addEventListener("DOMContentLoaded", function() {
         modalCaixas=new bootstrap.Modal(document.getElementById('modalCaixas'));
@@ -372,34 +463,43 @@
 
     async function carregarDetalhesObs(volId) {
         try {
-            const res = await fetch(`/api/volume/${volId}/observacoes`);
+            const res = await fetch(`/api/volume/${volId}/observacoes?secao=${SECAO_EXIBIDA}`);
             const data = await res.json();
 
             // 1. Renderizar Caixas
-            const tbody = document.getElementById('tblCaixasRastreioBody');
-            tbody.innerHTML = '';
-            data.caixas.forEach(c => {
-                let statusBadge = '<span class="badge bg-secondary">Pendente</span>';
-                let det = '-';
-                if (c.status === 'RECEBIDA') {
-                    statusBadge = '<span class="badge bg-success">Recebida</span>';
-                    det = `${c.usuario_conferente}<br><span class="text-muted small">${formatarDataBRT(c.data_hora_recepcao)}</span>`;
-                } else if (c.status === 'RETIRADO POR OUTRA PESSOA') {
-                    statusBadge = '<span class="badge bg-danger">Retirada</span>';
-                    det = `Retirador: ${c.retirado_por || '-'}`;
-                } else if (c.motivo_nao_recebido) {
-                    statusBadge = '<span class="badge bg-warning text-dark">Não Rec.</span>';
-                    det = `Motivo: ${c.motivo_nao_recebido}`;
-                }
+            const tbody = document.getElementById('tbObsCaixas') || document.getElementById('tblCaixasRastreioBody');
+            if (tbody) {
+                tbody.innerHTML = '';
+                data.caixas.forEach(c => {
+                    let statusBadge = '<span class="badge bg-secondary">Pendente</span>';
+                    let det = '-';
+                    let retirador = c.retirado_por || data.info_fixas.retirado_por || '';
+                    let motivo = c.motivo_nao_recebido || data.info_fixas.motivo_nao_recebido || '';
+                    let statusEfetivo = c.status;
+                    if ((statusEfetivo === 'NÃO RECEBIDA' || statusEfetivo === 'PENDENTE') && data.info_fixas.status) {
+                        statusEfetivo = data.info_fixas.status;
+                    }
 
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="fw-bold">Cx ${c.numero_caixa}</td>
-                        <td>${statusBadge}</td>
-                        <td>${det}</td>
-                    </tr>
-                `;
-            });
+                    if (statusEfetivo === 'RECEBIDA') {
+                        statusBadge = '<span class="badge bg-success">Recebida</span>';
+                        det = `${c.usuario_conferente || '-'}<br><span class="text-muted small">${formatarDataBRT(c.data_hora_recepcao)}</span>`;
+                    } else if (statusEfetivo === 'RETIRADO POR OUTRA PESSOA' || retirador) {
+                        statusBadge = '<span class="badge bg-danger">Retirada</span>';
+                        det = `Retirador: ${retirador || '-'}`;
+                    } else if (statusEfetivo === 'NÃO RECEBIDO' || motivo) {
+                        statusBadge = '<span class="badge bg-warning text-dark">Não Rec.</span>';
+                        det = `Motivo: ${motivo || '-'}`;
+                    }
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="fw-bold">${c.numero_caixa} / ${data.caixas.length}</td>
+                            <td>${statusBadge}</td>
+                            <td>${det}</td>
+                        </tr>
+                    `;
+                });
+            }
 
             // 2. Renderizar Info Fixas
             document.getElementById('lblFixoRetiradoBy').innerText = data.info_fixas.retirado_por || '-';
@@ -415,14 +515,19 @@
                 list.innerHTML = '<div class="text-muted text-center py-3 small">Nenhum comentário manual.</div>';
             } else {
                 data.comentarios.forEach(c => {
-                    // Botão Excluir (apenas para o autor ou admin)
                     let btnExcluir = '';
-                    if (c.usuario === USUARIO_LOGADO) {
+                    if (c.auto_gerada === 1) {
+                        if (ROLE_LOGADO === 'super_admin') {
+                            btnExcluir = `<span class="badge bg-secondary-subtle text-secondary me-1" style="font-size:0.65rem;"><i class="bi bi-lock-fill"></i> Auto</span><button class="btn btn-xs text-danger p-0 border-0 ms-1" onclick="excluirComentario(${c.id})"><i class="bi bi-trash"></i></button>`;
+                        } else {
+                            btnExcluir = `<span class="badge bg-secondary-subtle text-secondary ms-1" style="font-size:0.65rem;" title="Observação gerada automaticamente por outra seção"><i class="bi bi-lock-fill"></i> Auto</span>`;
+                        }
+                    } else if (c.usuario === USUARIO_LOGADO || ROLE_LOGADO === 'super_admin') {
                         btnExcluir = `<button class="btn btn-xs text-danger p-0 border-0 ms-2" onclick="excluirComentario(${c.id})"><i class="bi bi-trash"></i></button>`;
                     }
 
                     list.innerHTML += `
-                        <div class="list-group-item px-2 py-2 border-0 border-bottom">
+                        <div class="list-group-item px-2 py-2 border-0 border-bottom ${c.auto_gerada === 1 ? 'bg-light' : ''}">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="fw-bold text-dark small">${c.usuario}</span>
                                 <span class="text-muted" style="font-size:0.7rem;">${c.timestamp_formatado} ${btnExcluir}</span>
@@ -449,6 +554,16 @@
             if (res.ok) {
                 document.getElementById('txtNovoComentario').value = '';
                 await carregarDetalhesObs(id);
+                // Atualizar ícone na tabela principal
+                document.querySelectorAll(`.btn-note[data-id="${id}"]`).forEach(btn => {
+                    btn.classList.add('has-obs');
+                    btn.dataset.obs = txt;
+                    if (btn.classList.contains('d-sm-none')) {
+                        btn.innerHTML = '<i class="bi bi-pencil-fill"></i> Obs';
+                    } else {
+                        btn.innerHTML = '<i class="bi bi-pencil-fill"></i>';
+                    }
+                });
             } else {
                 const err = await res.json();
                 alert(err.msg || "Erro ao adicionar comentário.");
@@ -467,6 +582,18 @@
             });
             if (res.ok) {
                 await carregarDetalhesObs(id);
+                const list = document.getElementById('lstComentarios');
+                if (list && (list.children.length === 0 || list.innerText.includes('Nenhum comentário'))) {
+                    document.querySelectorAll(`.btn-note[data-id="${id}"]`).forEach(btn => {
+                        btn.classList.remove('has-obs');
+                        btn.dataset.obs = '';
+                        if (btn.classList.contains('d-sm-none')) {
+                            btn.innerHTML = '<i class="bi bi-pencil"></i> Obs';
+                        } else {
+                            btn.innerHTML = '<i class="bi bi-pencil"></i>';
+                        }
+                    });
+                }
             } else {
                 const err = await res.json();
                 alert(err.msg || "Erro ao excluir.");
@@ -547,22 +674,37 @@
         } catch(e) { alert("Erro de conexão."); }
     }
 
+    const IS_ADMIN_LOGADO = {{ 'true' if current_user.role in ['super_admin', 'admin', 'admin_tsre', 'admin_can'] else 'false' }};
+    let SENHA_DESFAZER_ATUAL = null;
+
     async function processarDesfazer(vid, qtd, num, btn) {
-        const tr = btn.closest('tr');
-        const timestampStr = tr.getAttribute('data-timestamp');
-        let exigeSenha = true;
-        if (timestampStr) {
-            const dataRecebimento = new Date(timestampStr);
-            if (dataRecebimento >= (sessionStartTime.getTime() - 1000)) { exigeSenha = false; }
-        }
-        if (exigeSenha) {
-            const s = prompt("🔒 DESFAZER ANTIGO\n\nRequer senha de administrador:");
-            if (s !== "pitaco" && s !== "admin123") return alert("Senha incorreta.");
+        let senhaAdmin = null;
+        if (!IS_ADMIN_LOGADO) {
+            senhaAdmin = prompt(`🔒 AÇÃO RESTRITA A ADMINISTRADOR\n\nDigite a senha do Administrador do ${SECAO_EXIBIDA} ou Superadmin para desfazer:`);
+            if (!senhaAdmin) return;
         } else {
-            if(!confirm("Desfazer recebimento atual?")) return;
+            if (!confirm(`Desfazer recebimento do volume ${num}?`)) return;
         }
-        if(qtd===1) { await fetch('/api/desfazer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:vid})}); window.location.reload(); }
-        else abrirModal(vid, num, 'DESFAZER');
+        
+        SENHA_DESFAZER_ATUAL = senhaAdmin;
+
+        if (qtd === 1) {
+            try {
+                const res = await fetch('/api/desfazer', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({volume_id: vid, senha: senhaAdmin})
+                });
+                if (res.ok) {
+                    window.location.reload();
+                } else {
+                    const err = await res.json();
+                    alert(err.msg || "Falha ao desfazer recebimento.");
+                }
+            } catch(e) { alert("Erro de conexão."); }
+        } else {
+            abrirModal(vid, num, 'DESFAZER');
+        }
     }
 
     // ─── MODAL CAIXAS (REQ-02: conferente individual) ───
@@ -597,19 +739,38 @@
             // Botão ⚠️ para marcar status especial na caixa individual
             let btnEspecial = '';
             if (modo==='RECEBER' && !isRec && !isRet && !isNaoRec) {
-                btnEspecial = `<button class="btn btn-sm btn-outline-warning border-0 p-1" onclick="event.preventDefault(); abrirStatusEspecial(${vid}, ${cx.numero_caixa}, '${cx.numero_caixa}')" title="Status especial"><i class="bi bi-exclamation-triangle"></i></button>`;
+                btnEspecial = `<button class="btn btn-sm btn-outline-warning border-0 p-1" onclick="event.preventDefault(); abrirStatusEspecial(${vid}, ${cx.numero_caixa}, '${num}', ${caixas.length})" title="Status especial"><i class="bi bi-exclamation-triangle"></i></button>`;
             }
             
-            l.innerHTML=`<input class="form-check-input" type="checkbox" ${!en?'disabled':''} ${(isRec||isRet||isNaoRec)&&modo==='DESFAZER'?'checked':''} ${isRec&&modo==='RECEBER'?'checked':''} onchange="acaoCaixa(${vid},${cx.numero_caixa},this)"><span>Caixa ${cx.numero_caixa}</span>${infoExtra}${btnEspecial}`; 
+            l.innerHTML=`<input class="form-check-input" type="checkbox" ${!en?'disabled':''} ${(isRec||isRet||isNaoRec)&&modo==='DESFAZER'?'checked':''} ${isRec&&modo==='RECEBER'?'checked':''} onchange="acaoCaixa(${vid},${cx.numero_caixa},this)"><span>${cx.numero_caixa} / ${caixas.length}</span>${infoExtra}${btnEspecial}`; 
             c.appendChild(l); 
         }); 
     }
 
     async function acaoCaixa(vid,n,cb){ 
         cb.disabled=true; 
+        const isDesfazer = !cb.checked;
+        let senha = SENHA_DESFAZER_ATUAL;
+        
+        if (isDesfazer && !IS_ADMIN_LOGADO && !senha) {
+            senha = prompt(`🔒 DESFAZER CAIXA\n\nAção restrita. Digite a senha do Administrador do ${SECAO_EXIBIDA} ou Superadmin:`);
+            if (!senha) {
+                cb.checked = true;
+                cb.disabled = false;
+                return;
+            }
+        }
+        
         const endpoint = cb.checked ? '/api/receber_caixa' : '/api/desfazer_caixa'; 
-        const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:vid,numero_caixa:n})}); 
-        if(res.ok) document.getElementById('modalCaixas').addEventListener('hidden.bs.modal',()=>window.location.reload(),{once:true}); 
+        const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:vid,numero_caixa:n,senha:senha})}); 
+        if(res.ok) {
+            document.getElementById('modalCaixas').addEventListener('hidden.bs.modal',()=>window.location.reload(),{once:true});
+        } else {
+            const err = await res.json();
+            alert(err.msg || "Erro ao processar caixa.");
+            cb.checked = !cb.checked;
+            cb.disabled = false;
+        }
     }
 
     // ─── EXTRAMANIFESTO ───
@@ -617,33 +778,69 @@
         document.getElementById('extraNumero').value = "";
         document.getElementById('extraRemetente').value = "";
         document.getElementById('extraQtd').value = "1";
+        // Resetar campos do CAN se existirem
+        const selectDestino = document.getElementById('extraDestino');
+        if (selectDestino) {
+            selectDestino.value = "PAMA-LS";
+            document.getElementById('divDestinoOutro').classList.add('d-none');
+            document.getElementById('extraDestinoOutroTexto').value = "";
+        }
         modalExtra.show();
     }
+
+    function toggleDestinoOutro() {
+        const sel = document.getElementById('extraDestino');
+        const div = document.getElementById('divDestinoOutro');
+        if (!sel || !div) return;
+        if (sel.value === 'OUTRO') {
+            div.classList.remove('d-none');
+        } else {
+            div.classList.add('d-none');
+            document.getElementById('extraDestinoOutroTexto').value = "";
+        }
+    }
+
     async function salvarExtra() {
-        const num = document.getElementById('extraNumero').value;
-        const rem = document.getElementById('extraRemetente').value || "NÃO IDENTIFICADO";
+        const num = document.getElementById('extraNumero').value.trim();
+        const rem = document.getElementById('extraRemetente').value.trim() || "NÃO IDENTIFICADO";
         const qtd = document.getElementById('extraQtd').value;
-        if(!num || !qtd) return alert("Preencha os campos obrigatórios.");
-        
+        if (!num || !qtd) return alert("Preencha os campos obrigatórios.");
+
+        // Coletar destino (apenas para CAN)
+        const selectDestino = document.getElementById('extraDestino');
+        let destino = null;
+        let destino_outro = null;
+        if (selectDestino) {
+            destino = selectDestino.value;
+            if (destino === 'OUTRO') {
+                destino_outro = document.getElementById('extraDestinoOutroTexto').value.trim();
+                if (!destino_outro) return alert("Informe o destino quando selecionar OUTRO.");
+            }
+        }
+
         try {
+            const payload = {manifesto_id: MANIFESTO_ID, numero_volume: num, remetente: rem, quantidade: qtd};
+            if (destino) payload.destino = destino;
+            if (destino_outro) payload.destino_outro = destino_outro;
+
             const res = await fetch('/api/adicionar_extra_conferencia', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({manifesto_id: MANIFESTO_ID, numero_volume: num, remetente: rem, quantidade: qtd})
+                body: JSON.stringify(payload)
             });
             if (res.ok) { alert("Volume adicionado!"); modalExtra.hide(); window.location.reload(); }
-            else alert("Erro ao adicionar.");
+            else { const err = await res.json(); alert("Erro: " + (err.msg || "Tente novamente.")); }
         } catch(e) { alert("Erro de conexão."); }
     }
 
     // ═══════════════════════════════════════════════════
-    // REQ-01: STATUS ESPECIAL
+    // REQ-01: STATUS ESPECIAL (Suporte a caixas individuais)
     // ═══════════════════════════════════════════════════
 
-    async function abrirStatusEspecial(volumeId, caixaNum, titulo) {
+    async function abrirStatusEspecial(volumeId, caixaNum, titulo, qtdExpedida) {
         document.getElementById('statusVolId').value = volumeId;
         document.getElementById('statusCaixaNum').value = caixaNum || '';
-        document.getElementById('statusVolTitulo').innerText = caixaNum ? `Caixa ${titulo} do volume` : `Volume ${titulo}`;
+        document.getElementById('statusVolTitulo').innerText = caixaNum ? `Caixa ${caixaNum} do Volume ${titulo}` : `Volume ${titulo}`;
         
         document.getElementById('statusTipo').value = '';
         document.getElementById('retiradoPorManualTexto').value = '';
@@ -651,6 +848,46 @@
         
         document.getElementById('divRetiradoPorManual').classList.add('d-none');
         document.getElementById('divMotivoNaoRecebido').classList.add('d-none');
+
+        const divCaixaSelect = document.getElementById('divStatusCaixaSelect');
+        const selectCaixa = document.getElementById('statusCaixaSelect');
+        selectCaixa.innerHTML = '';
+
+        if (caixaNum) {
+            // Veio do modal de caixas individuais para uma caixa específica
+            divCaixaSelect.classList.add('d-none');
+            selectCaixa.innerHTML = `<option value="${caixaNum}" selected>Caixa ${caixaNum}</option>`;
+        } else if (qtdExpedida && qtdExpedida > 1) {
+            // Veio da tabela principal e o volume tem múltiplas caixas
+            divCaixaSelect.classList.remove('d-none');
+            selectCaixa.innerHTML = '<option value="">Selecione qual caixa...</option>';
+            
+            try {
+                const res = await fetch('/api/obter_caixas', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({volume_id: volumeId})
+                });
+                const caixas = await res.json();
+                caixas.forEach(c => {
+                    let st = 'Pendente';
+                    if (c.status === 'RECEBIDA') st = 'Recebida';
+                    else if (c.retirado_por) st = `Retirada - ${c.retirado_por}`;
+                    else if (c.motivo_nao_recebido) st = `Não Rec - ${c.motivo_nao_recebido}`;
+                    selectCaixa.innerHTML += `<option value="${c.numero_caixa}">${c.numero_caixa} / ${caixas.length} - ${st}</option>`;
+                });
+                selectCaixa.innerHTML += '<option value="TODAS">⚠️ Aplicar a TODAS as caixas</option>';
+            } catch(e) {
+                for (let i = 1; i <= qtdExpedida; i++) {
+                    selectCaixa.innerHTML += `<option value="${i}">${i} / ${qtdExpedida} - Pendente</option>`;
+                }
+                selectCaixa.innerHTML += '<option value="TODAS">⚠️ Aplicar a TODAS as caixas</option>';
+            }
+        } else {
+            // Volume com 1 caixa única
+            divCaixaSelect.classList.add('d-none');
+            selectCaixa.innerHTML = `<option value="1" selected>1 / 1 - Status</option>`;
+        }
 
         modalStatusEspecial.show();
     }
@@ -673,9 +910,18 @@
 
     async function salvarStatusEspecial() {
         const volumeId = document.getElementById('statusVolId').value;
-        const caixaNum = document.getElementById('statusCaixaNum').value || null;
-        const statusTipo = document.getElementById('statusTipo').value;
+        let caixaNum = document.getElementById('statusCaixaNum').value;
+        const selectCaixa = document.getElementById('statusCaixaSelect');
         
+        if (!caixaNum && selectCaixa && selectCaixa.value) {
+            caixaNum = selectCaixa.value;
+        }
+        
+        if (selectCaixa && !selectCaixa.closest('.d-none') && !caixaNum) {
+            return alert("Selecione qual caixa receberá este status.");
+        }
+
+        const statusTipo = document.getElementById('statusTipo').value;
         if (!statusTipo) return alert("Selecione um status.");
 
         let retiradoPor = '';
@@ -689,12 +935,15 @@
             if (!motivoNaoRecebido) return alert("Informe o motivo do não recebimento.");
         }
 
-        if (!confirm(`Confirmar marcação como "${statusTipo}"?`)) return;
+        const numCaixaFinal = (caixaNum === 'TODAS' || caixaNum === '') ? null : parseInt(caixaNum);
+        const labelConfirm = numCaixaFinal ? `Caixa ${numCaixaFinal}` : 'TODAS as caixas do volume';
+
+        if (!confirm(`Confirmar marcação da ${labelConfirm} como "${statusTipo}"?`)) return;
 
         try {
             const payload = {
                 volume_id: parseInt(volumeId),
-                numero_caixa: caixaNum ? parseInt(caixaNum) : null,
+                numero_caixa: numCaixaFinal,
                 status: statusTipo,
                 retirado_por: retiradoPor,
                 motivo_nao_recebido: motivoNaoRecebido
@@ -755,6 +1004,101 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Histórico de Logs (R06) -->
+<div class="modal fade" id="modalLogs" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-journal-text me-2 text-primary"></i>Histórico de Auditoria (Logs)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-muted small">Registro completo de ações no manifesto</span>
+                    <div class="btn-group btn-group-sm" id="btnGroupLogsSecao">
+                        <button class="btn btn-outline-secondary active" onclick="filtrarLogsSecao(null, this)">Todas as Seções</button>
+                        <button class="btn btn-outline-secondary" onclick="filtrarLogsSecao('TSRE', this)">TSRE</button>
+                        <button class="btn btn-outline-secondary" onclick="filtrarLogsSecao('CAN', this)">CAN</button>
+                    </div>
+                </div>
+                <div id="containerLogs" class="list-group list-group-flush border rounded-3 overflow-auto" style="max-height: 400px;">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-top-0 rounded-bottom-4">
+                <button class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let modalLogs = null;
+    let manifestoLogsCache = [];
+
+    async function abrirModalLogs(manifestoId) {
+        if (!modalLogs) {
+            modalLogs = new bootstrap.Modal(document.getElementById('modalLogs'));
+        }
+        const container = document.getElementById('containerLogs');
+        container.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+        modalLogs.show();
+        
+        try {
+            const res = await fetch(`/api/manifesto/${manifestoId}/logs`);
+            manifestoLogsCache = await res.json();
+            renderizarLogs(manifestoLogsCache);
+        } catch(e) {
+            container.innerHTML = '<div class="text-danger text-center py-4">Erro ao carregar histórico de logs.</div>';
+        }
+    }
+
+    function renderizarLogs(logs) {
+        const container = document.getElementById('containerLogs');
+        container.innerHTML = '';
+        if (!logs || logs.length === 0) {
+            container.innerHTML = '<div class="text-muted text-center py-4">Nenhum log registrado para este manifesto.</div>';
+            return;
+        }
+        logs.forEach(log => {
+            const isCan = (log.secao === 'CAN');
+            const badgeSecao = isCan 
+                ? '<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-1">CAN</span>' 
+                : '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1">TSRE</span>';
+            const dataFmt = formatarDataBRT(log.timestamp_brt || log.timestamp);
+            
+            let acaoFmt = log.acao;
+            if (log.caixa_numero) acaoFmt += ` (Cx ${log.caixa_numero})`;
+            if (log.volume_id) acaoFmt += ` [Vol ID ${log.volume_id}]`;
+
+            container.innerHTML += `
+                <div class="list-group-item py-2 px-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-dark small">${log.usuario || 'SISTEMA'} ${badgeSecao}</span>
+                        <span class="text-muted" style="font-size:0.75rem;">${dataFmt}</span>
+                    </div>
+                    <div class="small text-secondary mt-1">
+                        <span class="fw-semibold text-body">${acaoFmt}</span>
+                        ${log.detalhes ? `<span class="d-block text-muted" style="font-size:0.75rem;">${log.detalhes}</span>` : ''}
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function filtrarLogsSecao(secao, btn) {
+        document.querySelectorAll('#btnGroupLogsSecao button').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        
+        if (!secao) {
+            renderizarLogs(manifestoLogsCache);
+        } else {
+            const filtrados = manifestoLogsCache.filter(l => (l.secao || 'TSRE') === secao);
+            renderizarLogs(filtrados);
+        }
+    }
+</script>
 
 <link rel="stylesheet" href="/static/css/scanner.css">
 <script src="/static/js/scan_viewer.js"></script>

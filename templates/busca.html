@@ -5,14 +5,24 @@
     .nav-tabs .nav-link { color: #64748b; font-weight: 600; border: none; }
     .nav-tabs .nav-link.active { color: #2563eb; border-bottom: 2px solid #2563eb; background: transparent; }
     .table-middle td { vertical-align: middle; }
-    .btn-action { border-radius: 6px; font-weight: 500; font-size: 0.8rem; padding: 0.3rem 0.6rem; gap: 4px; display: inline-flex; align-items: center; }
+    .btn-action { border-radius: 6px; font-weight: 500; font-size: 0.8rem; padding: 0.3rem 0.6rem; gap: 4px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; }
     .btn-rec { background-color: #22c55e; color: white; border: none; }
+    .btn-rec:hover { background-color: #16a34a; color: white; }
+    .btn-all { background-color: #4f46e5; color: white; border: none; }
+    .btn-all:hover { background-color: #4338ca; color: white; }
+    .btn-undo { background-color: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; }
+    .btn-undo:hover { background-color: #ffe4e6; color: #e11d48; }
+    .btn-warn { background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+    .btn-warn:hover { background-color: #fde68a; }
     .btn-del { background-color: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
     .btn-view { background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
     
     /* OBS Indicator */
     .btn-note { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #cbd5e1; color: #94a3b8; background: white; display: flex; align-items: center; justify-content: center; }
     .btn-note.has-obs { background-color: #fffbeb; color: #d97706; border-color: #fcd34d; font-weight: bold; }
+    .pointer { cursor: pointer; }
+    .caixa-conferente { font-size: 0.75rem; color: #64748b; }
+    .caixa-retirado { font-size: 0.75rem; color: #dc2626; font-weight: 600; }
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -30,6 +40,13 @@
         <div class="card shadow-sm border-0 rounded-4 mb-4">
             <div class="card-body bg-light rounded-4">
                 <div class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted">Seção Consultada</label>
+                        <select class="form-select fw-bold border-primary text-primary" id="filtroManSecao" onchange="buscarManifestos()">
+                            <option value="TSRE" {% if secao_ativa == 'TSRE' %}selected{% endif %}>TSRE</option>
+                            <option value="CAN" {% if secao_ativa == 'CAN' %}selected{% endif %}>CAN</option>
+                        </select>
+                    </div>
                     <div class="col-md-3"><label class="form-label small fw-bold text-muted">Número</label><input type="text" class="form-control" id="filtroManNumero"></div>
                     <div class="col-md-2"><label class="form-label small fw-bold text-muted">De</label><input type="date" class="form-control" id="filtroManDataIni"></div>
                     <div class="col-md-2"><label class="form-label small fw-bold text-muted">Até</label><input type="date" class="form-control" id="filtroManDataFim"></div>
@@ -43,12 +60,12 @@
                             <option value="RETIRADO POR OUTRA PESSOA">Retirado</option>
                         </select>
                     </div>
-                    <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100 fw-bold shadow-sm" onclick="buscarManifestos()">Buscar</button></div>
+                    <div class="col-md-12 d-flex justify-content-end"><button class="btn btn-primary fw-bold shadow-sm px-4" onclick="buscarManifestos()">Buscar Manifestos</button></div>
                 </div>
             </div>
         </div>
         <div class="card shadow-sm border-0 rounded-4">
-            <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0 table-middle"><thead class="bg-light text-muted small text-uppercase"><tr><th class="ps-4">Manifesto</th><th>Data</th><th>Volumes</th><th>Caixas</th><th>Ações</th></tr></thead><tbody id="tabelaManifestosBody"><tr><td colspan="5" class="text-center py-5 text-muted">Use os filtros.</td></tr></tbody></table></div></div>
+            <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0 table-middle"><thead class="bg-light text-muted small text-uppercase"><tr><th class="ps-4">Manifesto</th><th>Seção</th><th>Data</th><th class="text-center">Volumes</th><th class="text-center">Caixas / Status</th><th class="text-center">Ações</th></tr></thead><tbody id="tabelaManifestosBody"><tr><td colspan="6" class="text-center py-5 text-muted">Use os filtros acima para consultar.</td></tr></tbody></table></div></div>
         </div>
     </div>
 
@@ -57,13 +74,20 @@
         <div class="card shadow-sm border-0 rounded-4 mb-4">
             <div class="card-body bg-light rounded-4">
                 <div class="row g-3 align-items-center">
-                    <div class="col-md-10"><label class="form-label small fw-bold text-muted">N° Volume</label><input type="text" class="form-control form-control-lg" id="filtroVolNumero" onkeyup="verificarBuscaAuto()"><div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="checkBuscaAuto" checked><label class="form-check-label small text-muted">Busca automática</label></div></div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted">Seção Consultada</label>
+                        <select class="form-select fw-bold border-success text-success" id="filtroVolSecao" onchange="buscarVolumes()">
+                            <option value="TSRE" {% if secao_ativa == 'TSRE' %}selected{% endif %}>TSRE</option>
+                            <option value="CAN" {% if secao_ativa == 'CAN' %}selected{% endif %}>CAN</option>
+                        </select>
+                    </div>
+                    <div class="col-md-7"><label class="form-label small fw-bold text-muted">N° Volume</label><input type="text" class="form-control form-control-lg" id="filtroVolNumero" onkeyup="verificarBuscaAuto()" placeholder="Digite o número do volume..."><div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="checkBuscaAuto" checked><label class="form-check-label small text-muted">Busca automática ao digitar</label></div></div>
                     <div class="col-md-2 align-self-start mt-4"><button class="btn btn-success w-100 btn-lg fw-bold shadow-sm" onclick="buscarVolumes()">Buscar</button></div>
                 </div>
             </div>
         </div>
         <div class="card shadow-sm border-0 rounded-4">
-            <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0 table-middle"><thead class="bg-light text-muted small text-uppercase"><tr><th class="ps-4">Volume</th><th>Remetente</th><th>Obs</th><th>Manifesto</th><th>Caixas</th><th>Status</th><th>Por</th><th>Em</th><th>Ações</th></tr></thead><tbody id="tabelaVolumesBody"><tr><td colspan="9" class="text-center py-5 text-muted">Digite para buscar.</td></tr></tbody></table></div></div>
+            <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0 table-middle"><thead class="bg-light text-muted small text-uppercase"><tr><th class="ps-4">Volume</th><th>Remetente</th><th>Obs</th><th>Manifesto</th><th class="text-center">Caixas</th><th class="text-center">Status</th><th>Conferente</th><th>Data/Hora</th><th class="text-center">Ações</th></tr></thead><tbody id="tabelaVolumesBody"><tr><td colspan="9" class="text-center py-5 text-muted">Digite o número do volume para buscar.</td></tr></tbody></table></div></div>
         </div>
     </div>
 </div>
@@ -81,70 +105,67 @@
             </div>
             <div class="modal-body p-4">
                 <input type="hidden" id="obsVolId">
+                <input type="hidden" id="obsVolSecao">
                 
-                <!-- Abas ou Seções -->
                 <div class="row g-4">
-                    <!-- Esquerda: Rastreabilidade por Caixa e Dados Fixos -->
                     <div class="col-md-6 border-end">
                         <h6 class="fw-bold mb-3"><i class="bi bi-boxes me-2 text-secondary"></i>Rastreio de Caixas Individuais</h6>
                         <div class="table-responsive mb-4" style="max-height: 220px;">
                             <table class="table table-sm table-hover align-middle small">
                                 <thead class="table-light">
-                                    <tr>
-                                        <th>Caixa</th>
-                                        <th>Status</th>
-                                        <th>Por / Detalhe</th>
-                                    </tr>
+                                    <tr><th>Caixa</th><th>Status</th><th>Por / Detalhe</th><th class="text-center">Ação</th></tr>
                                 </thead>
-                                <tbody id="tblCaixasRastreioBody">
-                                    <!-- Dinâmico -->
-                                </tbody>
+                                <tbody id="tblCaixasRastreioBody"></tbody>
                             </table>
                         </div>
 
-                        <hr>
-
-                        <!-- Informações Fixas -->
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="fw-bold m-0"><i class="bi bi-lock-fill me-2 text-danger"></i>Informações de Controle (Fixo)</h6>
-                            <button class="btn btn-sm btn-link p-0 text-decoration-none text-danger fw-bold" onclick="habilitarEdicaoFixa()">
-                                <i class="bi bi-pencil-square"></i> Editar (Admin)
-                            </button>
-                        </div>
-                        <div class="bg-light p-3 rounded-3 small">
-                            <div class="mb-2">
-                                <span class="text-muted d-block">Quem retirou (se retirado):</span>
-                                <strong id="lblFixoRetiradoBy">-</strong>
-                                <input type="text" class="form-control form-control-sm d-none mt-1" id="txtFixoRetiradoBy">
+                        <!-- REQ-02: Informações de Controle Fixas (editáveis com senha de admin) -->
+                        <div class="card bg-light border-0 rounded-3 p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold m-0 text-dark" style="font-size:0.85rem;"><i class="bi bi-shield-lock-fill me-1 text-warning"></i>Informações de Controle Fixas</h6>
+                                <button class="btn btn-xs btn-outline-secondary" id="btnEditarFixas" onclick="habilitarEdicaoFixa()"><i class="bi bi-pencil me-1"></i>Editar</button>
                             </div>
-                            <div>
-                                <span class="text-muted d-block">Motivo do Não Recebimento (se não recebido):</span>
-                                <strong id="lblFixoMotivo">-</strong>
-                                <input type="text" class="form-control form-control-sm d-none mt-1" id="txtFixoMotivo">
+                            
+                            <!-- Exibição Leitura -->
+                            <div id="divFixasLeitura" class="small">
+                                <div class="mb-1"><strong>Retirado por:</strong> <span id="lblFixoRetiradoBy" class="text-muted">-</span></div>
+                                <div><strong>Motivo não recebido:</strong> <span id="lblFixoMotivo" class="text-muted">-</span></div>
                             </div>
-                            <div class="d-none mt-3" id="divFixoBotoes">
-                                <input type="password" class="form-control form-control-sm mb-2" id="pwdFixoAdmin" placeholder="Senha do Admin">
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-xs btn-danger w-100" onclick="salvarEdicaoFixa()">Salvar</button>
-                                    <button class="btn btn-xs btn-light border w-100" onclick="cancelarEdicaoFixa()">Cancelar</button>
+                            
+                            <!-- Formulário de Edição (Oculto) -->
+                            <div id="divFixasEdicao" class="d-none mt-2">
+                                <div class="mb-2">
+                                    <label class="form-label micro text-dark fw-bold">Retirado por (manual):</label>
+                                    <input type="text" id="txtFixoRetiradoBy" class="form-control form-control-sm">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label micro text-dark fw-bold">Motivo não recebido (manual):</label>
+                                    <input type="text" id="txtFixoMotivo" class="form-control form-control-sm">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label micro text-danger fw-bold">Senha de Administrador <span class="text-danger">*</span>:</label>
+                                    <input type="password" id="txtFixoSenhaAdmin" class="form-control form-control-sm" placeholder="Obrigatório para salvar">
+                                </div>
+                                <div class="d-flex gap-2 justify-content-end mt-3">
+                                    <button class="btn btn-sm btn-light" onclick="cancelarEdicaoFixa()">Cancelar</button>
+                                    <button class="btn btn-sm btn-primary fw-bold" onclick="salvarInfoFixas()">Salvar Alterações</button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Direita: Timeline de Observações Livres -->
+                    <!-- Direita: Histórico de Comentários / Observações Livres -->
                     <div class="col-md-6">
-                        <h6 class="fw-bold mb-3"><i class="bi bi-chat-left-text-fill me-2 text-secondary"></i>Observações e Comentários Livres</h6>
+                        <h6 class="fw-bold mb-3"><i class="bi bi-chat-left-text me-2 text-secondary"></i>Observações Livres</h6>
                         
                         <!-- Lista de Comentários -->
-                        <div class="list-group list-group-flush mb-3 overflow-auto" id="lstComentarios" style="max-height: 220px; border: 1px solid #f1f5f9; border-radius: 8px; padding: 5px;">
-                            <!-- Dinâmico -->
+                        <div id="lstComentarios" class="border rounded-3 p-2 mb-3 bg-white" style="height: 200px; overflow-y: auto;">
                         </div>
 
-                        <!-- Novo Comentário -->
+                        <!-- Formulário de Novo Comentário -->
                         <div class="input-group">
-                            <input type="text" class="form-control rounded-start-3" id="txtNovoComentario" placeholder="Escrever comentário..." maxlength="255">
-                            <button class="btn btn-primary" onclick="adicionarComentario()"><i class="bi bi-send-fill"></i></button>
+                            <input type="text" id="txtNovoComentario" class="form-control rounded-start-3" placeholder="Adicionar comentário..." onkeypress="if(event.key==='Enter') adicionarComentario()">
+                            <button class="btn btn-primary rounded-end-3" onclick="adicionarComentario()"><i class="bi bi-send-fill"></i></button>
                         </div>
                     </div>
                 </div>
@@ -156,85 +177,190 @@
     </div>
 </div>
 
+<!-- Modal Caixas -->
+<div class="modal fade" id="modalCaixas" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div id="modalCaixasHeader" class="modal-header text-white border-bottom-0">
+                <div><h5 class="modal-title fw-bold" id="modalCaixasTitulo"></h5></div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="listaCaixasContainer" class="list-group list-group-flush"></div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Status Especial -->
+<div class="modal fade" id="modalStatusEspecial" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-danger bg-opacity-10 border-bottom-0">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>Status Especial</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="statusVolId">
+                <input type="hidden" id="statusCaixaNum">
+                <input type="hidden" id="statusVolSecao">
+                <p class="small text-muted fw-bold mb-3" id="statusVolTitulo"></p>
+
+                <!-- Seletor de Caixa (quando o volume possui mais de uma caixa) -->
+                <div class="mb-3 d-none" id="divStatusCaixaSelect">
+                    <label class="form-label fw-bold small text-dark">Caixa Afetada <span class="text-danger">*</span></label>
+                    <select class="form-select rounded-3" id="statusCaixaSelect">
+                        <!-- Carregado dinamicamente -->
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-dark">Novo Status <span class="text-danger">*</span></label>
+                    <select class="form-select rounded-3" id="statusTipo" onchange="toggleStatusCampos()">
+                        <option value="">Selecione...</option>
+                        <option value="NÃO RECEBIDO">NÃO RECEBIDO</option>
+                        <option value="RETIRADO POR OUTRA PESSOA">RETIRADO POR OUTRA PESSOA</option>
+                    </select>
+                </div>
+
+                <!-- Campo Digitação Manual Obrigatório: Quem retirou -->
+                <div id="divRetiradoPorManual" class="d-none mb-3">
+                    <label class="form-label fw-bold small text-dark">Quem retirou? <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control rounded-3" id="retiradoPorManualTexto" 
+                           placeholder="Digite o nome de quem retirou (obrigatório)" maxlength="100">
+                    <small class="text-muted">Como a pessoa é externa ao sistema, digite o nome completo.</small>
+                </div>
+
+                <!-- Campo Digitação Manual Obrigatório: Motivo do Não Recebimento -->
+                <div id="divMotivoNaoRecebido" class="d-none mb-3">
+                    <label class="form-label fw-bold small text-dark">Motivo do Não Recebimento <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control rounded-3" id="motivoNaoRecebidoTexto" 
+                           placeholder="Digite o motivo do não recebimento (obrigatório)" maxlength="255">
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 bg-light rounded-bottom-4">
+                <button class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-danger rounded-pill fw-bold px-4" onclick="salvarStatusEspecial()">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-    let modalDetalhes, modalObs;
+    let modalDetalhes, modalObs, modalCaixas, modalStatusEspecial;
     document.addEventListener("DOMContentLoaded", function() {
         modalDetalhes = new bootstrap.Modal(document.getElementById('modalDetalhes'));
         modalObs = new bootstrap.Modal(document.getElementById('modalObs'));
+        modalCaixas = new bootstrap.Modal(document.getElementById('modalCaixas'));
+        modalStatusEspecial = new bootstrap.Modal(document.getElementById('modalStatusEspecial'));
+
+        document.getElementById('modalCaixas').addEventListener('hidden.bs.modal', function() {
+            buscarVolumes();
+        });
     });
 
     const USUARIO_LOGADO = "{{ current_user.nome }}";
+    const SECAO_USUARIO = "{{ current_user.secao }}";
+    const SECAO_INICIAL = "{{ secao_ativa }}";
+    const ROLE_LOGADO = "{{ current_user.role }}";
+    const IS_SUPER_ADMIN = {{ 'true' if current_user.role == 'super_admin' else 'false' }};
+    const IS_ADMIN_LOGADO = {{ 'true' if current_user.role in ['super_admin', 'admin', 'admin_tsre', 'admin_can'] else 'false' }};
+    let SENHA_DESFAZER_ATUAL = null;
 
     // ─── OBSERVAÇÕES DETALHADAS (v4) ───
     async function abrirObs(btn) { 
         const volId = btn.dataset.id;
+        const sec = btn.dataset.secao || document.getElementById('filtroVolSecao')?.value || document.getElementById('filtroManSecao')?.value || SECAO_USUARIO;
         document.getElementById('obsVolId').value = volId;
-        document.getElementById('obsVolTitulo').innerText = btn.dataset.num;
+        document.getElementById('obsVolSecao').value = sec;
+        document.getElementById('obsVolTitulo').innerText = `${btn.dataset.num} (${sec})`;
         document.getElementById('txtNovoComentario').value = '';
         cancelarEdicaoFixa();
-        await carregarDetalhesObs(volId);
+        await carregarDetalhesObs(volId, sec);
         modalObs.show(); 
     }
 
-    async function carregarDetalhesObs(volId) {
+    async function carregarDetalhesObs(volId, secaoRef) {
+        const sec = secaoRef || document.getElementById('obsVolSecao')?.value || document.getElementById('filtroVolSecao')?.value || SECAO_USUARIO;
+        const podeOperarSecao = (IS_SUPER_ADMIN || sec === SECAO_USUARIO);
+        const volNum = (document.getElementById('obsVolTitulo').innerText || '').split(' (')[0];
         try {
-            const res = await fetch(`/api/volume/${volId}/observacoes`);
+            const res = await fetch(`/api/volume/${volId}/observacoes?secao=${sec}`);
             const data = await res.json();
-
-            // 1. Renderizar Caixas
+            
+            // 1. Renderizar Caixas Rastreio com Ações Interativas
             const tbody = document.getElementById('tblCaixasRastreioBody');
             tbody.innerHTML = '';
-            data.caixas.forEach(c => {
-                let statusBadge = '<span class="badge bg-secondary">Pendente</span>';
-                let det = '-';
-                if (c.status === 'RECEBIDA') {
-                    statusBadge = '<span class="badge bg-success">Recebida</span>';
-                    det = `${c.usuario_conferente}<br><span class="text-muted small">${formatarDataBRT(c.data_hora_recepcao)}</span>`;
-                } else if (c.status === 'RETIRADO POR OUTRA PESSOA') {
-                    statusBadge = '<span class="badge bg-danger">Retirada</span>';
-                    det = `Retirador: ${c.retirado_por || '-'}`;
-                } else if (c.motivo_nao_recebido) {
-                    statusBadge = '<span class="badge bg-warning text-dark">Não Rec.</span>';
-                    det = `Motivo: ${c.motivo_nao_recebido}`;
-                }
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="fw-bold">Cx ${c.numero_caixa}</td>
-                        <td>${statusBadge}</td>
-                        <td>${det}</td>
-                    </tr>
-                `;
-            });
-
-            // 2. Renderizar Info Fixas
-            document.getElementById('lblFixoRetiradoBy').innerText = data.info_fixas.retirado_por || '-';
-            document.getElementById('lblFixoMotivo').innerText = data.info_fixas.motivo_nao_recebido || '-';
-            
-            document.getElementById('txtFixoRetiradoBy').value = data.info_fixas.retirado_por || '';
-            document.getElementById('txtFixoMotivo').value = data.info_fixas.motivo_nao_recebido || '';
-
-            // 3. Renderizar Comentários Livres
-            const list = document.getElementById('lstComentarios');
-            list.innerHTML = '';
-            if (data.comentarios.length === 0) {
-                list.innerHTML = '<div class="text-muted text-center py-3 small">Nenhum comentário manual.</div>';
+            if (!data.caixas || data.caixas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-2">Nenhuma caixa registrada.</td></tr>';
             } else {
-                data.comentarios.forEach(c => {
-                    let btnExcluir = '';
-                    if (c.usuario === USUARIO_LOGADO) {
-                        btnExcluir = `<button class="btn btn-xs text-danger p-0 border-0 ms-2" onclick="excluirComentario(${c.id})"><i class="bi bi-trash"></i></button>`;
+                data.caixas.forEach(c => {
+                    let statusBadge = '<span class="badge bg-secondary">Pendente</span>';
+                    let det = '-';
+                    const statusEfectivo = c.status || 'NÃO RECEBIDA';
+                    const retirador = c.retirado_por || (data.info_fixas ? data.info_fixas.retirado_por : '');
+                    const motivo = c.motivo_nao_recebido || (data.info_fixas ? data.info_fixas.motivo_nao_recebido : '');
+
+                    let acoes = '-';
+                    if (statusEfectivo === 'RECEBIDA') {
+                        statusBadge = '<span class="badge bg-success">Recebida</span>';
+                        det = `${c.usuario_conferente || '-'}<br><span class="text-muted small">${formatarDataBRT(c.data_hora_recepcao)}</span>`;
+                        if (podeOperarSecao) {
+                            acoes = `<button class="btn btn-xs btn-outline-danger p-1" onclick="desfazerCaixaDireto(${volId}, ${c.numero_caixa}, '${sec}')" title="Desfazer Caixa"><i class="bi bi-arrow-counterclockwise"></i></button>`;
+                        }
+                    } else if (statusEfectivo === 'RETIRADO POR OUTRA PESSOA' || retirador) {
+                        statusBadge = '<span class="badge bg-danger">Retirada</span>';
+                        det = `Retirador: ${retirador || '-'}`;
+                        if (podeOperarSecao) {
+                            acoes = `<button class="btn btn-xs btn-outline-danger p-1" onclick="desfazerCaixaDireto(${volId}, ${c.numero_caixa}, '${sec}')" title="Desfazer"><i class="bi bi-arrow-counterclockwise"></i></button>`;
+                        }
+                    } else if (statusEfectivo === 'NÃO RECEBIDO' || motivo) {
+                        statusBadge = '<span class="badge bg-warning text-dark">Não Rec.</span>';
+                        det = `Motivo: ${motivo || '-'}`;
+                        if (podeOperarSecao) {
+                            acoes = `<button class="btn btn-xs btn-outline-danger p-1" onclick="desfazerCaixaDireto(${volId}, ${c.numero_caixa}, '${sec}')" title="Desfazer"><i class="bi bi-arrow-counterclockwise"></i></button>`;
+                        }
+                    } else {
+                        if (podeOperarSecao) {
+                            acoes = `
+                                <button class="btn btn-xs btn-outline-success p-1 me-1" onclick="receberCaixaDireto(${volId}, ${c.numero_caixa}, '${sec}')" title="Receber Caixa"><i class="bi bi-check-lg"></i></button>
+                                <button class="btn btn-xs btn-outline-warning p-1" onclick="abrirStatusEspecialBusca(${volId}, ${c.numero_caixa}, '${volNum}', ${data.caixas.length}, '${sec}')" title="Status Especial"><i class="bi bi-exclamation-triangle"></i></button>
+                            `;
+                        }
                     }
 
-                    list.innerHTML += `
-                        <div class="list-group-item px-2 py-2 border-0 border-bottom">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-bold text-dark small">${c.usuario}</span>
-                                <span class="text-muted" style="font-size:0.7rem;">${c.timestamp_formatado} ${btnExcluir}</span>
-                            </div>
-                            <p class="m-0 text-secondary" style="font-size:0.8rem; word-break: break-all;">${c.texto}</p>
-                        </div>
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="fw-bold">${c.numero_caixa} / ${data.caixas.length}</td>
+                            <td>${statusBadge}</td>
+                            <td>${det}</td>
+                            <td class="text-center">${acoes}</td>
+                        </tr>
                     `;
+                });
+            }
+
+            // 2. Renderizar Info Fixas
+            document.getElementById('lblFixoRetiradoBy').innerText = (data.info_fixas && data.info_fixas.retirado_por) || '-';
+            document.getElementById('lblFixoMotivo').innerText = (data.info_fixas && data.info_fixas.motivo_nao_recebido) || '-';
+            document.getElementById('txtFixoRetiradoBy').value = (data.info_fixas && data.info_fixas.retirado_por) || '';
+            document.getElementById('txtFixoMotivo').value = (data.info_fixas && data.info_fixas.motivo_nao_recebido) || '';
+
+            // 3. Renderizar Comentários
+            const list = document.getElementById('lstComentarios');
+            list.innerHTML = '';
+            if (!data.comentarios || data.comentarios.length === 0) list.innerHTML = '<div class="text-muted text-center py-3 small">Nenhum comentário.</div>';
+            else {
+                data.comentarios.forEach(c => {
+                    let btnExcluir = (c.usuario === USUARIO_LOGADO || IS_SUPER_ADMIN) ? `<button class="btn btn-xs text-danger p-0 border-0 ms-2" onclick="excluirComentario(${c.id})"><i class="bi bi-trash"></i></button>` : '';
+                    list.innerHTML += `
+                        <div class="border-bottom p-2">
+                            <div class="d-flex justify-content-between small text-muted"><strong>${c.usuario}</strong> <span>${c.timestamp_formatado || formatarDataBRT(c.timestamp)} ${btnExcluir}</span></div>
+                            <div class="small">${c.texto}</div>
+                        </div>`;
                 });
             }
         } catch(e) { console.error(e); }
@@ -242,6 +368,7 @@
 
     async function adicionarComentario() {
         const id = document.getElementById('obsVolId').value;
+        const sec = document.getElementById('obsVolSecao')?.value || SECAO_USUARIO;
         const txt = document.getElementById('txtNovoComentario').value.trim();
         if (!txt) return;
 
@@ -249,64 +376,63 @@
             const res = await fetch('/api/observacao_manual/adicionar', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({volume_id: id, texto: txt})
+                body: JSON.stringify({volume_id: id, texto: txt, secao: sec})
             });
             if (res.ok) {
                 document.getElementById('txtNovoComentario').value = '';
-                await carregarDetalhesObs(id);
-            } else {
-                const err = await res.json();
-                alert(err.msg || "Erro ao adicionar comentário.");
+                await carregarDetalhesObs(id, sec);
+                // Atualizar ícone na busca
+                document.querySelectorAll(`.btn-note[data-id="${id}"]`).forEach(btn => {
+                    btn.classList.add('has-obs');
+                    btn.innerHTML = '<i class="bi bi-pencil-fill"></i>';
+                });
             }
-        } catch(e) { alert("Erro de conexão."); }
+        } catch(e) { alert("Erro ao adicionar comentário."); }
     }
 
     async function excluirComentario(obsId) {
-        if (!confirm("Excluir esta observação permanente?")) return;
-        const id = document.getElementById('obsVolId').value;
+        if (!confirm("Deseja excluir este comentário?")) return;
         try {
             const res = await fetch('/api/observacao_manual/excluir', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({observacao_id: obsId})
             });
+            const data = await res.json();
             if (res.ok) {
-                await carregarDetalhesObs(id);
+                const volId = document.getElementById('obsVolId').value;
+                const sec = document.getElementById('obsVolSecao')?.value || SECAO_USUARIO;
+                await carregarDetalhesObs(volId, sec);
             } else {
-                const err = await res.json();
-                alert(err.msg || "Erro ao excluir.");
+                alert(data.msg || "Erro ao excluir.");
             }
         } catch(e) { alert("Erro de conexão."); }
     }
 
     function habilitarEdicaoFixa() {
-        document.getElementById('lblFixoRetiradoBy').classList.add('d-none');
-        document.getElementById('lblFixoMotivo').classList.add('d-none');
-        
-        document.getElementById('txtFixoRetiradoBy').classList.remove('d-none');
-        document.getElementById('txtFixoMotivo').classList.remove('d-none');
-        
-        document.getElementById('divFixoBotoes').classList.remove('d-none');
+        document.getElementById('divFixasLeitura').classList.add('d-none');
+        document.getElementById('divFixasEdicao').classList.remove('d-none');
+        document.getElementById('btnEditarFixas').classList.add('d-none');
     }
 
     function cancelarEdicaoFixa() {
-        document.getElementById('lblFixoRetiradoBy').classList.remove('d-none');
-        document.getElementById('lblFixoMotivo').classList.remove('d-none');
-        
-        document.getElementById('txtFixoRetiradoBy').classList.add('d-none');
-        document.getElementById('txtFixoMotivo').classList.add('d-none');
-        
-        document.getElementById('divFixoBotoes').classList.add('d-none');
-        document.getElementById('pwdFixoAdmin').value = '';
+        document.getElementById('divFixasLeitura').classList.remove('d-none');
+        document.getElementById('divFixasEdicao').classList.add('d-none');
+        document.getElementById('btnEditarFixas').classList.remove('d-none');
+        document.getElementById('txtFixoSenhaAdmin').value = '';
     }
 
-    async function salvarEdicaoFixa() {
+    async function salvarInfoFixas() {
         const id = document.getElementById('obsVolId').value;
+        const sec = document.getElementById('obsVolSecao')?.value || SECAO_USUARIO;
         const ret = document.getElementById('txtFixoRetiradoBy').value.trim();
         const mot = document.getElementById('txtFixoMotivo').value.trim();
-        const pwd = document.getElementById('pwdFixoAdmin').value;
+        const pwd = document.getElementById('txtFixoSenhaAdmin').value;
 
-        if (!pwd) return alert("Insira a senha do administrador para salvar.");
+        if (!pwd) {
+            alert("A senha de administrador é obrigatória.");
+            return;
+        }
 
         try {
             const res = await fetch('/api/volume/info_fixas/atualizar', {
@@ -316,34 +442,24 @@
                     volume_id: id,
                     retirado_por: ret,
                     motivo_nao_recebido: mot,
-                    senha_admin: pwd
+                    senha_admin: pwd,
+                    secao: sec
                 })
             });
             const data = await res.json();
             if (res.ok) {
-                alert("Dados de controle updated!");
+                alert("Dados de controle atualizados!");
                 cancelarEdicaoFixa();
-                await carregarDetalhesObs(id);
-                document.getElementById('modalObs').addEventListener('hidden.bs.modal', () => {
-                    if (document.getElementById('tab-manifestos').classList.contains('active')) {
-                        // Se estiver na aba manifestos, recarregar detalhes
-                        const titulo = document.getElementById('tituloDetalhes').innerText;
-                        // Encontrar id do manifesto atual
-                        // No busca.html podemos fazer window.location.reload() que é mais simples
-                        window.location.reload();
-                    } else {
-                        buscarVolumes();
-                    }
-                }, {once: true});
+                await carregarDetalhesObs(id, sec);
+                buscarVolumes();
             } else {
                 alert(data.msg || "Erro ao salvar.");
             }
         } catch(e) { alert("Erro de conexão."); }
     }
 
-    /** REQ-03: Formata ISO string para dd/mm/aa - hh:mm */
     function formatarDataBRT(isoStr) {
-        if (!isoStr) return '-';
+        if (!isoStr || isoStr === '-') return '-';
         try {
             const dt = new Date(isoStr);
             if (isNaN(dt.getTime())) return isoStr;
@@ -359,19 +475,33 @@
     // Busca Manifestos
     async function buscarManifestos() {
         const corpo = document.getElementById('tabelaManifestosBody');
-        corpo.innerHTML = '<tr><td colspan="5" class="text-center py-4"><div class="spinner-border"></div></td></tr>';
-        const payload = { numero: document.getElementById('filtroManNumero').value, data_ini: document.getElementById('filtroManDataIni').value, data_fim: document.getElementById('filtroManDataFim').value, status: document.getElementById('filtroManStatus').value };
+        const secaoSel = document.getElementById('filtroManSecao').value;
+        corpo.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border"></div></td></tr>';
+        const payload = {
+            numero: document.getElementById('filtroManNumero').value,
+            data_ini: document.getElementById('filtroManDataIni').value,
+            data_fim: document.getElementById('filtroManDataFim').value,
+            status: document.getElementById('filtroManStatus').value,
+            secao: secaoSel
+        };
         try {
             const res = await fetch('/api/busca/manifestos', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
             const dados = await res.json();
             corpo.innerHTML = '';
-            if(dados.length===0){ corpo.innerHTML='<tr><td colspan="5" class="text-center text-muted">Nada encontrado.</td></tr>'; return; }
+            if(dados.length===0){ corpo.innerHTML='<tr><td colspan="6" class="text-center text-muted">Nada encontrado.</td></tr>'; return; }
             dados.forEach(m => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td class="ps-4 fw-bold text-primary">${m.numero_manifesto}</td><td>${m.data_manifesto||'-'}</td><td class="text-center">${m.total_volumes}</td><td class="text-center">${m.total_caixas_recebidas||0}/${m.total_caixas_expedidas||0}</td><td class="text-center"><div class="d-flex justify-content-center gap-2"><button class="btn btn-action btn-view" onclick="abrirDetalhes(${m.id},'${m.numero_manifesto}')"><i class="bi bi-eye"></i></button><a href="/conferencia/${m.id}" class="btn btn-action btn-go"><i class="bi bi-clipboard-check"></i></a></div></td>`;
+                const stBadge = `<span class="badge ${m.status==='TOTALMENTE RECEBIDO'?'bg-success':(m.status==='PARCIALMENTE RECEBIDO'?'bg-warning text-dark':'bg-secondary')}">${m.status}</span>`;
+                tr.innerHTML = `
+                    <td class="ps-4 fw-bold text-primary">${m.numero_manifesto}</td>
+                    <td><span class="badge bg-light text-dark border">${secaoSel}</span></td>
+                    <td>${m.data_manifesto||'-'}</td>
+                    <td class="text-center">${m.total_volumes}</td>
+                    <td class="text-center">${m.total_caixas_recebidas||0} / ${m.total_caixas_expedidas||0} - ${stBadge}</td>
+                    <td class="text-center"><div class="d-flex justify-content-center gap-2"><button class="btn btn-action btn-view" onclick="abrirDetalhes(${m.id},'${m.numero_manifesto}', '${secaoSel}')"><i class="bi bi-eye"></i></button><a href="/conferencia/${m.id}?secao=${secaoSel}" class="btn btn-action btn-go"><i class="bi bi-clipboard-check"></i></a></div></td>`;
                 corpo.appendChild(tr);
             });
-        } catch(e){ corpo.innerHTML='<tr><td colspan="5" class="text-danger text-center">Erro.</td></tr>'; }
+        } catch(e){ corpo.innerHTML='<tr><td colspan="6" class="text-danger text-center">Erro ao buscar manifestos.</td></tr>'; }
     }
 
     // Busca Volumes
@@ -380,71 +510,454 @@
 
     async function buscarVolumes() {
         const termo = document.getElementById('filtroVolNumero').value.trim();
+        const secaoSel = document.getElementById('filtroVolSecao').value;
         const corpo = document.getElementById('tabelaVolumesBody');
-        if(termo.length<3){ if(termo.length===0) corpo.innerHTML='<tr><td colspan="9" class="text-center text-muted">Digite...</td></tr>'; return; }
+        if(termo.length<3){ if(termo.length===0) corpo.innerHTML='<tr><td colspan="9" class="text-center text-muted">Digite pelo menos 3 caracteres...</td></tr>'; return; }
         corpo.innerHTML='<tr><td colspan="9" class="text-center py-4"><div class="spinner-border"></div></td></tr>';
         try {
-            const res = await fetch('/api/busca/volumes', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({termo: termo}) });
+            const res = await fetch('/api/busca/volumes', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({termo: termo, secao: secaoSel}) });
             const dados = await res.json();
             corpo.innerHTML = '';
-            if(dados.length===0){ corpo.innerHTML='<tr><td colspan="9" class="text-center text-muted">Nada encontrado.</td></tr>'; return; }
+            if(dados.length===0){ corpo.innerHTML='<tr><td colspan="9" class="text-center text-muted">Nenhum volume encontrado nesta seção.</td></tr>'; return; }
             dados.forEach(v => {
                 const tr = document.createElement('tr');
-                const isRec = v.status === 'COMPLETO';
+                const isRec = v.status === 'COMPLETO' || v.status === 'TOTALMENTE RECEBIDO' || v.status === 'RECEBIDO';
                 const isRet = v.status === 'RETIRADO POR OUTRA PESSOA';
+                const isNaoRec = v.status === 'NÃO RECEBIDO';
                 
-                // Botão OBS com indicador
-                let btnObs = `<button class="btn-note ${v.observacao?'has-obs':''}" data-id="${v.id}" data-num="${v.numero_volume}" data-obs="${v.observacao||''}" onclick="abrirObs(this)">${v.observacao?'<i class="bi bi-pencil-fill"></i>':'<i class="bi bi-pencil"></i>'}</button>`;
+                let btnObs = `<button class="btn-note ${v.observacao?'has-obs':''}" data-id="${v.id}" data-num="${v.numero_volume}" data-obs="${v.observacao||''}" data-secao="${secaoSel}" onclick="abrirObs(this)">${v.observacao?'<i class="bi bi-pencil-fill"></i>':'<i class="bi bi-pencil"></i>'}</button>`;
                 
-                // Status icon
-                let statusIcon = '<i class="bi bi-circle text-muted"></i>';
-                if (isRec) statusIcon = '<i class="bi bi-check-circle-fill text-success"></i>';
-                else if (isRet) statusIcon = '<i class="bi bi-person-x-fill text-danger"></i>';
-                else if (v.status === 'PARCIAL') statusIcon = '<i class="bi bi-exclamation-circle-fill text-warning"></i>';
+                let statusIcon = '<i class="bi bi-circle text-muted" title="Pendente"></i>';
+                if (isRec) statusIcon = '<i class="bi bi-check-circle-fill text-success" title="Recebido"></i>';
+                else if (isRet) statusIcon = '<i class="bi bi-person-x-fill text-danger" title="Retirado"></i>';
+                else if (isNaoRec) statusIcon = '<i class="bi bi-x-circle-fill text-warning" title="Não Recebido"></i>';
+                else if (v.status === 'PARCIAL') statusIcon = '<i class="bi bi-exclamation-circle-fill text-warning" title="Parcial"></i>';
 
-                let botoes = (isRec || isRet) ? `<button class="btn btn-action btn-del" onclick="desfazerVolumeBusca(${v.id})"><i class="bi bi-arrow-counterclockwise"></i></button>` : `<button class="btn btn-action btn-rec" onclick="receberVolumeRapido(${v.id},'${v.numero_volume}')"><i class="bi bi-box-seam"></i></button>`;
-                botoes += ` <button class="btn btn-action btn-view" onclick="abrirDetalhes(${v.manifesto_id}, '${v.numero_manifesto}')"><i class="bi bi-eye"></i></button>`;
+                let extraBadge = v.secao_extra ? `<br><span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill" style="font-size:0.65rem;"><i class="bi bi-plus-circle-fill me-1"></i>Extra ${v.secao_extra}</span>` : '';
 
-                tr.innerHTML = `<td class="ps-4 fw-bold text-dark">${v.numero_volume}</td><td>${v.remetente}</td><td class="text-center">${btnObs}</td><td class="text-primary">${v.numero_manifesto}</td><td class="text-center">${v.quantidade_recebida}/${v.quantidade_expedida}</td><td class="text-center">${statusIcon}</td><td>${v.usuario_recepcao||'-'}</td><td>${formatarDataBRT(v.data_hora_ultima_recepcao)}</td><td class="text-center d-flex justify-content-center gap-2">${botoes}</td>`;
+                let botoes = '';
+                const podeOperarNaSecao = (v.pode_operar !== false && (IS_SUPER_ADMIN || secaoSel === SECAO_USUARIO));
+                if (podeOperarNaSecao) {
+                    if (isRec || isRet || isNaoRec) {
+                        botoes = `<button class="btn btn-action btn-undo" onclick="processarDesfazerBusca(${v.id}, ${v.quantidade_expedida}, '${v.numero_volume}', '${secaoSel}')" title="Desfazer"><i class="bi bi-arrow-counterclockwise"></i> Desfazer</button>`;
+                    } else {
+                        if (v.quantidade_expedida > 1) {
+                            botoes = `
+                                <button class="btn btn-action btn-rec" onclick="abrirModalCaixasBusca(${v.id}, '${v.numero_volume}', 'RECEBER', '${secaoSel}')" title="Receber Caixas"><i class="bi bi-boxes"></i> Caixas</button>
+                                <button class="btn btn-action btn-all" onclick="receberTudoVolumeBusca(${v.id}, '${v.numero_volume}', '${secaoSel}')" title="Receber Tudo"><i class="bi bi-check-all"></i> Tudo</button>
+                                <button class="btn btn-action btn-warn" onclick="abrirStatusEspecialBusca(${v.id}, null, '${v.numero_volume}', ${v.quantidade_expedida}, '${secaoSel}')" title="Status Especial"><i class="bi bi-exclamation-triangle-fill"></i></button>
+                            `;
+                        } else {
+                            botoes = `
+                                <button class="btn btn-action btn-rec" onclick="receberVolumeUnicoBusca(${v.id}, '${v.numero_volume}', '${secaoSel}')" title="Receber"><i class="bi bi-box-seam-fill"></i> Receber</button>
+                                <button class="btn btn-action btn-warn" onclick="abrirStatusEspecialBusca(${v.id}, null, '${v.numero_volume}', 1, '${secaoSel}')" title="Status Especial"><i class="bi bi-exclamation-triangle-fill"></i></button>
+                            `;
+                        }
+                    }
+                }
+                botoes += ` <button class="btn btn-action btn-view" onclick="abrirDetalhes(${v.manifesto_id}, '${v.numero_manifesto}', '${secaoSel}')" title="Ver Detalhes"><i class="bi bi-eye"></i></button>`;
+
+                tr.innerHTML = `<td class="ps-4 fw-bold text-dark">${v.numero_volume}${extraBadge}</td><td>${v.remetente}</td><td class="text-center">${btnObs}</td><td class="text-primary">${v.numero_manifesto} <span class="badge bg-light text-dark border ms-1">${secaoSel}</span></td><td class="text-center">${v.quantidade_recebida}/${v.quantidade_expedida}</td><td class="text-center">${statusIcon}</td><td>${v.usuario_recepcao||'-'}</td><td>${formatarDataBRT(v.data_hora_ultima_recepcao)}</td><td class="text-center d-flex justify-content-center gap-1 flex-wrap">${botoes}</td>`;
                 corpo.appendChild(tr);
             });
-        } catch(e){ corpo.innerHTML='<tr><td colspan="9" class="text-danger">Erro.</td></tr>'; }
+        } catch(e){ corpo.innerHTML='<tr><td colspan="9" class="text-danger text-center">Erro ao buscar volumes.</td></tr>'; }
     }
 
-    // Detalhes Global
-    async function abrirDetalhes(id, numero) {
-        document.getElementById('tituloDetalhes').innerText = numero;
+    // Detalhes Global por Seção
+    async function abrirDetalhes(id, numero, secaoRef) {
+        const sec = secaoRef || document.getElementById('filtroManSecao')?.value || document.getElementById('filtroVolSecao')?.value || SECAO_USUARIO;
+        document.getElementById('tituloDetalhes').innerText = `${numero} (${sec})`;
         const corpo = document.getElementById('corpoDetalhes');
-        corpo.innerHTML = '<tr><td colspan="11" class="text-center"><div class="spinner-border"></div></td></tr>';
+        corpo.innerHTML = '<tr><td colspan="11" class="text-center py-4"><div class="spinner-border"></div></td></tr>';
         modalDetalhes.show();
         try {
-            const res = await fetch(`/api/manifesto/${id}/volumes`);
+            const res = await fetch(`/api/manifesto/${id}/volumes?secao=${sec}`);
             const volumes = await res.json();
             corpo.innerHTML = '';
+            const podeOperarSecao = (IS_SUPER_ADMIN || sec === SECAO_USUARIO);
             volumes.forEach(v => {
                 const tr = document.createElement('tr');
                 tr.classList.add('align-middle');
-                const isRec = v.status === 'COMPLETO' || v.status === 'TOTALMENTE RECEBIDO';
+                const isRec = v.status === 'COMPLETO' || v.status === 'TOTALMENTE RECEBIDO' || v.status === 'RECEBIDO';
                 const isRet = v.status === 'RETIRADO POR OUTRA PESSOA';
+                const isNaoRec = v.status === 'NÃO RECEBIDO';
                 
-                let btnObs = `<button class="btn-note ${v.observacao?'has-obs':''}" data-id="${v.id}" data-num="${v.numero_volume}" data-obs="${v.observacao||''}" onclick="abrirObs(this)">${v.observacao?'<i class="bi bi-pencil-fill"></i>':'<i class="bi bi-pencil"></i>'}</button>`;
-                let btnDesfazer = (isRec || isRet) ? `<button class="btn btn-sm text-danger border-0" onclick="desfazerRecebimentoDetalhes(${v.id})"><i class="bi bi-arrow-counterclockwise"></i></button>` : '-';
+                let btnObs = `<button class="btn-note ${v.observacao?'has-obs':''}" data-id="${v.id}" data-num="${v.numero_volume}" data-obs="${v.observacao||''}" data-secao="${sec}" onclick="abrirObs(this)">${v.observacao?'<i class="bi bi-pencil-fill"></i>':'<i class="bi bi-pencil"></i>'}</button>`;
+                let btnDesfazer = (podeOperarSecao && v.pode_operar !== false && (isRec || isRet || isNaoRec || v.status === 'PARCIAL')) ? `<button class="btn btn-sm text-danger border-0" onclick="desfazerRecebimentoDetalhes(${v.id}, '${sec}')" title="Desfazer"><i class="bi bi-arrow-counterclockwise"></i></button>` : '-';
 
-                // Status badge
                 let statusBadge = v.status;
                 if (isRec) statusBadge = '<span class="badge bg-success">Recebido</span>';
                 else if (isRet) statusBadge = '<span class="badge bg-danger">Retirado</span>';
+                else if (isNaoRec) statusBadge = '<span class="badge bg-warning text-dark">Não Recebido</span>';
                 else if (v.status === 'PARCIAL') statusBadge = '<span class="badge bg-warning text-dark">Parcial</span>';
                 else statusBadge = `<span class="badge bg-secondary">${v.status}</span>`;
 
-                tr.innerHTML = `<td class="fw-bold">${v.remetente}</td><td>${v.numero_volume}</td><td>${v.destinatario}</td><td class="text-center">${btnObs}</td><td>${v.peso_total}</td><td>${v.tipo_material}</td><td>${v.quantidade_recebida}/${v.quantidade_expedida}</td><td>${formatarDataBRT(v.data_hora_ultima_recepcao)}</td><td style="white-space:nowrap;">${v.usuario_recepcao||'-'}</td><td>${statusBadge}</td><td class="text-center">${btnDesfazer}</td>`;
+                let extraBadge = v.secao_extra ? `<br><span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill" style="font-size:0.65rem;"><i class="bi bi-plus-circle-fill me-1"></i>Extra ${v.secao_extra}</span>` : '';
+
+                tr.innerHTML = `<td class="fw-bold">${v.remetente}</td><td>${v.numero_volume}${extraBadge}</td><td>${v.destinatario}</td><td class="text-center">${btnObs}</td><td>${v.peso_total}</td><td>${v.tipo_material}</td><td>${v.quantidade_recebida}/${v.quantidade_expedida}</td><td>${formatarDataBRT(v.data_hora_ultima_recepcao)}</td><td style="white-space:nowrap;">${v.usuario_recepcao||'-'}</td><td>${statusBadge}</td><td class="text-center">${btnDesfazer}</td>`;
                 corpo.appendChild(tr);
             });
-        } catch(e){ corpo.innerHTML='Erro ao carregar detalhes.'; }
+        } catch(e){ corpo.innerHTML='<tr><td colspan="11" class="text-danger text-center">Erro ao carregar detalhes.</td></tr>'; }
     }
 
-    async function receberVolumeRapido(vid, vnum){ if(!confirm("Receber?"))return; await fetch('/api/receber_rapido_volume',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:vid})}); buscarVolumes(); }
-    async function desfazerVolumeBusca(vid){ const s=prompt("Senha Admin:"); if(s!=="pitaco" && s!=="admin123")return alert("Errado"); await fetch('/api/desfazer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:vid})}); buscarVolumes(); }
-    async function desfazerRecebimentoDetalhes(vid){ const s=prompt("Senha Admin:"); if(s!=="pitaco" && s!=="admin123")return alert("Errado"); await fetch('/api/desfazer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:vid})}); alert("Desfeito"); const modal=bootstrap.Modal.getInstance(document.getElementById('modalDetalhes')); modal.hide(); }
+    // ─── AÇÕES DE CAIXAS INDIVIDUAIS E VOLUMES ───
+    async function abrirModalCaixasBusca(vid, num, modo, secao) {
+        const sec = secao || document.getElementById('filtroVolSecao')?.value || SECAO_USUARIO;
+        const h = document.getElementById('modalCaixasHeader');
+        h.className = modo === 'RECEBER' ? 'modal-header bg-success text-white border-bottom-0' : 'modal-header bg-danger text-white border-bottom-0';
+        document.getElementById('modalCaixasTitulo').innerText = modo === 'RECEBER' ? `Receber Caixas — ${num}` : `Desfazer Caixas — ${num}`;
+        const c = document.getElementById('listaCaixasContainer');
+        c.innerHTML = '<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div> Carregando...</div>';
+        modalCaixas.show();
+        
+        try {
+            const res = await fetch('/api/obter_caixas', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({volume_id: vid, secao: sec})
+            });
+            const caixas = await res.json();
+            c.innerHTML = '';
+            caixas.forEach(cx => {
+                const isRec = cx.status === 'RECEBIDA';
+                const isRet = cx.status === 'RETIRADO POR OUTRA PESSOA';
+                const isNaoRec = cx.motivo_nao_recebido ? true : false;
+                let en = (modo === 'RECEBER' && !isRec && !isRet && !isNaoRec) || (modo === 'DESFAZER' && (isRec || isRet || isNaoRec));
+                
+                const l = document.createElement('label');
+                l.className = `list-group-item d-flex gap-3 py-3 align-items-center ${en ? 'list-group-item-action pointer' : 'bg-light text-muted'}`;
+                
+                let infoExtra = '';
+                if (isRec && cx.usuario_conferente) {
+                    infoExtra = `<span class="caixa-conferente ms-auto">${cx.usuario_conferente} • ${formatarDataBRT(cx.data_hora_recepcao)}</span>`;
+                } else if (isRet && cx.retirado_por) {
+                    infoExtra = `<span class="caixa-retirado ms-auto"><i class="bi bi-person-x me-1"></i>${cx.retirado_por}</span>`;
+                } else if (isNaoRec) {
+                    infoExtra = `<span class="caixa-retirado ms-auto text-warning"><i class="bi bi-exclamation-circle me-1"></i>Não Rec: ${cx.motivo_nao_recebido}</span>`;
+                }
+
+                let btnEspecial = '';
+                if (modo === 'RECEBER' && !isRec && !isRet && !isNaoRec) {
+                    btnEspecial = `<button class="btn btn-sm btn-outline-warning border-0 p-1" onclick="event.preventDefault(); abrirStatusEspecialBusca(${vid}, ${cx.numero_caixa}, '${num}', ${caixas.length}, '${sec}')" title="Status especial"><i class="bi bi-exclamation-triangle"></i></button>`;
+                }
+                
+                l.innerHTML = `<input class="form-check-input" type="checkbox" ${!en ? 'disabled' : ''} ${(isRec || isRet || isNaoRec) && modo === 'DESFAZER' ? 'checked' : ''} ${isRec && modo === 'RECEBER' ? 'checked' : ''} onchange="acaoCaixaBusca(${vid}, ${cx.numero_caixa}, this, '${sec}', '${modo}')"><span>${cx.numero_caixa} / ${caixas.length}</span>${infoExtra}${btnEspecial}`;
+                c.appendChild(l);
+            });
+        } catch(e) {
+            c.innerHTML = '<div class="text-danger text-center py-3">Erro ao carregar caixas.</div>';
+        }
+    }
+
+    async function acaoCaixaBusca(vid, n, cb, secao, modo) {
+        cb.disabled = true;
+        const isDesfazer = (modo === 'DESFAZER') ? !cb.checked : !cb.checked;
+        let senha = SENHA_DESFAZER_ATUAL;
+        
+        const podeDireto = IS_SUPER_ADMIN || (IS_ADMIN_LOGADO && secao === SECAO_USUARIO);
+        if (isDesfazer && !podeDireto && !senha) {
+            senha = prompt(`🔒 DESFAZER CAIXA\n\nAção restrita. Digite a senha do Administrador do ${secao} ou Superadmin:`);
+            if (!senha) {
+                cb.checked = !cb.checked;
+                cb.disabled = false;
+                return;
+            }
+        }
+        
+        const endpoint = cb.checked ? '/api/receber_caixa' : '/api/desfazer_caixa';
+        try {
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({volume_id: vid, numero_caixa: n, senha: senha, secao: secao})
+            });
+            if (res.ok) {
+                buscarVolumes();
+                setTimeout(() => {
+                    const rawTitulo = document.getElementById('modalCaixasTitulo').innerText || '';
+                    const numVol = rawTitulo.includes('— ') ? rawTitulo.split('— ')[1] : '';
+                    abrirModalCaixasBusca(vid, numVol, modo, secao);
+                }, 300);
+            } else {
+                const err = await res.json();
+                alert(err.msg || "Erro ao processar caixa.");
+                cb.checked = !cb.checked;
+                cb.disabled = false;
+            }
+        } catch(e) {
+            alert("Erro de conexão.");
+            cb.checked = !cb.checked;
+            cb.disabled = false;
+        }
+    }
+
+    async function receberTudoVolumeBusca(vid, num, secao) {
+        if (!confirm(`Confirma o recebimento de TODAS as caixas do volume ${num}?`)) return;
+        try {
+            const res = await fetch('/api/receber_rapido_volume', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({volume_id: vid, secao: secao})
+            });
+            if (res.ok) {
+                buscarVolumes();
+            } else {
+                const err = await res.json();
+                alert(err.msg || "Erro ao processar.");
+            }
+        } catch(e) { alert("Erro de conexão."); }
+    }
+
+    async function receberVolumeUnicoBusca(vid, num, secao) {
+        if (!confirm(`Confirmar recebimento do volume ${num}?`)) return;
+        try {
+            const res = await fetch('/api/receber', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({volume_id: vid, secao: secao})
+            });
+            if (res.ok) {
+                buscarVolumes();
+            } else {
+                const err = await res.json();
+                alert(err.msg || "Erro ao processar.");
+            }
+        } catch(e) { alert("Erro de conexão."); }
+    }
+
+    async function processarDesfazerBusca(vid, qtd, num, secao) {
+        const sec = secao || document.getElementById('filtroVolSecao')?.value || SECAO_USUARIO;
+        const podeDireto = IS_SUPER_ADMIN || (IS_ADMIN_LOGADO && sec === SECAO_USUARIO);
+        let senhaAdmin = null;
+        if (!podeDireto) {
+            senhaAdmin = prompt(`🔒 AÇÃO RESTRITA A ADMINISTRADOR\n\nDigite a senha do Administrador do ${sec} ou Superadmin para desfazer:`);
+            if (!senhaAdmin) return;
+        } else {
+            if (!confirm(`Desfazer recebimento do volume ${num}?`)) return;
+        }
+        SENHA_DESFAZER_ATUAL = senhaAdmin;
+        
+        if (qtd === 1) {
+            try {
+                const res = await fetch('/api/desfazer', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({volume_id: vid, senha: senhaAdmin, secao: sec})
+                });
+                if (res.ok) {
+                    buscarVolumes();
+                } else {
+                    const err = await res.json();
+                    alert(err.msg || "Falha ao desfazer recebimento.");
+                }
+            } catch(e) { alert("Erro de conexão."); }
+        } else {
+            abrirModalCaixasBusca(vid, num, 'DESFAZER', sec);
+        }
+    }
+
+    async function receberCaixaDireto(vid, numCaixa, secao) {
+        try {
+            const res = await fetch('/api/receber_caixa', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({volume_id: vid, numero_caixa: numCaixa, secao: secao})
+            });
+            if (res.ok) {
+                await carregarDetalhesObs(vid, secao);
+                buscarVolumes();
+            } else {
+                const err = await res.json();
+                alert(err.msg || "Erro ao receber caixa.");
+            }
+        } catch(e) { alert("Erro de conexão."); }
+    }
+
+    async function desfazerCaixaDireto(vid, numCaixa, secao) {
+        const sec = secao || document.getElementById('obsVolSecao')?.value || document.getElementById('filtroVolSecao')?.value || SECAO_USUARIO;
+        const podeDireto = IS_SUPER_ADMIN || (IS_ADMIN_LOGADO && sec === SECAO_USUARIO);
+        let senha = null;
+        if (!podeDireto) {
+            senha = prompt(`🔒 DESFAZER CAIXA\n\nAção restrita. Digite a senha do Administrador do ${sec} ou Superadmin:`);
+            if (!senha) return;
+        } else {
+            if (!confirm(`Desfazer recebimento da Caixa ${numCaixa}?`)) return;
+        }
+        try {
+            const res = await fetch('/api/desfazer_caixa', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({volume_id: vid, numero_caixa: numCaixa, senha: senha, secao: sec})
+            });
+            if (res.ok) {
+                await carregarDetalhesObs(vid, sec);
+                buscarVolumes();
+            } else {
+                const err = await res.json();
+                alert(err.msg || "Erro ao desfazer caixa.");
+            }
+        } catch(e) { alert("Erro de conexão."); }
+    }
+
+    async function desfazerVolumeBusca(vid){
+        const sec = document.getElementById('filtroVolSecao')?.value || SECAO_USUARIO;
+        processarDesfazerBusca(vid, 1, '', sec);
+    }
+
+    async function desfazerRecebimentoDetalhes(vid, secaoRef){
+        const sec = secaoRef || document.getElementById('filtroManSecao')?.value || document.getElementById('filtroVolSecao')?.value || SECAO_USUARIO;
+        const podeDireto = IS_SUPER_ADMIN || (IS_ADMIN_LOGADO && sec === SECAO_USUARIO);
+        let s = null;
+        if (!podeDireto) {
+            s = prompt(`🔒 AÇÃO RESTRITA A ADMINISTRADOR\n\nDigite a senha do Administrador do ${sec} ou Superadmin para desfazer:`);
+            if (!s) return;
+        } else {
+            if (!confirm("Desfazer recebimento deste volume?")) return;
+        }
+        const res = await fetch('/api/desfazer', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({volume_id: vid, senha: s, secao: sec})
+        });
+        if (res.ok) {
+            alert("Recebimento desfeito com sucesso!");
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalDetalhes'));
+            if (modal) modal.hide();
+            buscarVolumes();
+        } else {
+            const err = await res.json();
+            alert(err.msg || "Erro ao desfazer.");
+        }
+    }
+
+    // ─── STATUS ESPECIAL ───
+    async function abrirStatusEspecialBusca(volumeId, caixaNum, titulo, qtdExpedida, secao) {
+        const sec = secao || document.getElementById('filtroVolSecao')?.value || SECAO_USUARIO;
+        document.getElementById('statusVolId').value = volumeId;
+        document.getElementById('statusCaixaNum').value = caixaNum || '';
+        document.getElementById('statusVolSecao').value = sec;
+        document.getElementById('statusVolTitulo').innerText = caixaNum ? `Caixa ${caixaNum} do Volume ${titulo} (${sec})` : `Volume ${titulo} (${sec})`;
+        
+        document.getElementById('statusTipo').value = '';
+        document.getElementById('retiradoPorManualTexto').value = '';
+        document.getElementById('motivoNaoRecebidoTexto').value = '';
+        
+        document.getElementById('divRetiradoPorManual').classList.add('d-none');
+        document.getElementById('divMotivoNaoRecebido').classList.add('d-none');
+
+        const divCaixaSelect = document.getElementById('divStatusCaixaSelect');
+        const selectCaixa = document.getElementById('statusCaixaSelect');
+        selectCaixa.innerHTML = '';
+
+        if (caixaNum) {
+            divCaixaSelect.classList.add('d-none');
+            selectCaixa.innerHTML = `<option value="${caixaNum}" selected>Caixa ${caixaNum}</option>`;
+        } else if (qtdExpedida && qtdExpedida > 1) {
+            divCaixaSelect.classList.remove('d-none');
+            selectCaixa.innerHTML = '<option value="">Selecione qual caixa...</option>';
+            
+            try {
+                const res = await fetch('/api/obter_caixas', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({volume_id: volumeId, secao: sec})
+                });
+                const caixas = await res.json();
+                caixas.forEach(c => {
+                    let st = 'Pendente';
+                    if (c.status === 'RECEBIDA') st = 'Recebida';
+                    else if (c.retirado_por) st = `Retirada - ${c.retirado_por}`;
+                    else if (c.motivo_nao_recebido) st = `Não Rec - ${c.motivo_nao_recebido}`;
+                    selectCaixa.innerHTML += `<option value="${c.numero_caixa}">${c.numero_caixa} / ${caixas.length} - ${st}</option>`;
+                });
+                selectCaixa.innerHTML += '<option value="TODAS">⚠️ Aplicar a TODAS as caixas</option>';
+            } catch(e) {
+                for (let i = 1; i <= qtdExpedida; i++) {
+                    selectCaixa.innerHTML += `<option value="${i}">${i} / ${qtdExpedida} - Pendente</option>`;
+                }
+                selectCaixa.innerHTML += '<option value="TODAS">⚠️ Aplicar a TODAS as caixas</option>';
+            }
+        } else {
+            divCaixaSelect.classList.add('d-none');
+            selectCaixa.innerHTML = `<option value="1" selected>1 / 1 - Status</option>`;
+        }
+
+        modalStatusEspecial.show();
+    }
+
+    function toggleStatusCampos() {
+        const tipo = document.getElementById('statusTipo').value;
+        const divRetirado = document.getElementById('divRetiradoPorManual');
+        const divMotivo = document.getElementById('divMotivoNaoRecebido');
+        
+        divRetirado.classList.add('d-none');
+        divMotivo.classList.add('d-none');
+
+        if (tipo === 'RETIRADO POR OUTRA PESSOA') {
+            divRetirado.classList.remove('d-none');
+        } else if (tipo === 'NÃO RECEBIDO') {
+            divMotivo.classList.remove('d-none');
+        }
+    }
+
+    async function salvarStatusEspecial() {
+        const volumeId = document.getElementById('statusVolId').value;
+        let caixaNum = document.getElementById('statusCaixaNum').value;
+        const selectCaixa = document.getElementById('statusCaixaSelect');
+        const secao = document.getElementById('statusVolSecao').value || SECAO_USUARIO;
+        
+        if (!caixaNum && selectCaixa && selectCaixa.value) {
+            caixaNum = selectCaixa.value;
+        }
+        
+        if (selectCaixa && !selectCaixa.closest('.d-none') && !caixaNum) {
+            return alert("Selecione qual caixa receberá este status.");
+        }
+
+        const statusTipo = document.getElementById('statusTipo').value;
+        if (!statusTipo) return alert("Selecione um status.");
+
+        let retiradoPor = '';
+        let motivoNaoRecebido = '';
+
+        if (statusTipo === 'RETIRADO POR OUTRA PESSOA') {
+            retiradoPor = document.getElementById('retiradoPorManualTexto').value.trim();
+            if (!retiradoPor) return alert("Informe quem retirou o material.");
+        } else if (statusTipo === 'NÃO RECEBIDO') {
+            motivoNaoRecebido = document.getElementById('motivoNaoRecebidoTexto').value.trim();
+            if (!motivoNaoRecebido) return alert("Informe o motivo do não recebimento.");
+        }
+
+        const numCaixaFinal = (caixaNum === 'TODAS' || caixaNum === '') ? null : parseInt(caixaNum);
+        const labelConfirm = numCaixaFinal ? `Caixa ${numCaixaFinal}` : 'TODAS as caixas do volume';
+
+        if (!confirm(`Confirmar marcação da ${labelConfirm} como "${statusTipo}"?`)) return;
+
+        try {
+            const payload = {
+                volume_id: parseInt(volumeId),
+                numero_caixa: numCaixaFinal,
+                status: statusTipo,
+                retirado_por: retiradoPor,
+                motivo_nao_recebido: motivoNaoRecebido,
+                secao: secao
+            };
+            const res = await fetch('/api/status_especial', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (res.ok) {
+                modalStatusEspecial.hide();
+                buscarVolumes();
+                if (document.getElementById('modalObs').classList.contains('show')) {
+                    await carregarDetalhesObs(volumeId, secao);
+                }
+            } else {
+                alert(data.msg || "Erro ao processar.");
+            }
+        } catch(e) { alert("Erro de conexão."); }
+    }
 </script>
 {% endblock %}

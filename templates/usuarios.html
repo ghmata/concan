@@ -1,57 +1,300 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0">👥 Gestão de Usuários</h4>
-    <button class="btn btn-primary btn-rounded shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovoUsuario">
-        ➕ Novo Usuário
+{% set usuarios_can = usuarios | selectattr('secao', 'equalto', 'CAN') | list %}
+{% set usuarios_tsre = usuarios | rejectattr('secao', 'equalto', 'CAN') | list %}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h4 class="fw-bold mb-0">👥 Gestão de Usuários</h4>
+        <p class="text-muted small mb-0">Controle de acesso separado por seção e nível de permissão</p>
+    </div>
+    {% if pode_gerenciar_usuarios(current_user) %}
+    <button class="btn btn-primary btn-rounded shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#modalNovoUsuario">
+        <i class="bi bi-person-plus-fill me-1"></i> Novo Usuário
     </button>
+    {% endif %}
 </div>
 
-<div class="card shadow-sm border-0 rounded-4">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0 align-middle">
-                <thead class="bg-light">
-                    <tr>
-                        <th class="ps-4">Nome Completo</th>
-                        <th>Login (Usuário)</th>
-                        <th>Função</th>
-                        <th class="text-center">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for u in usuarios %}
-                    <tr>
-                        <td class="ps-4 fw-bold text-dark">{{ u.nome_completo }}</td>
-                        <td class="text-muted">{{ u.username }}</td>
-                        <td>
-                            {% if u.role == 'admin' %}
-                                <span class="badge bg-primary">Administrador</span>
-                            {% else %}
-                                <span class="badge bg-secondary">Operador</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">
-                            {% if u.id != current_user.id %}
-                            <form action="/usuarios/excluir/{{ u.id }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');" class="d-inline">
-                                <button type="submit" class="btn btn-sm btn-outline-danger border-0" title="Excluir">🗑️</button>
-                            </form>
-                            {% else %}
-                                <span class="text-muted small">(Você)</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+{% if is_super_admin(current_user) %}
+<!-- Abas de Filtro por Seção (Super-Admin) -->
+<ul class="nav nav-pills mb-4 gap-2" id="userSecaoTabs" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active rounded-pill px-3 py-2 fw-semibold" id="tab-todos-btn" data-bs-toggle="pill" data-bs-target="#tab-todos">
+            <i class="bi bi-people-fill me-1"></i> Todas as Seções ({{ usuarios | length }})
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link rounded-pill px-3 py-2 fw-semibold" id="tab-tsre-btn" data-bs-toggle="pill" data-bs-target="#tab-tsre">
+            <i class="bi bi-box-seam me-1"></i> TSRE ({{ usuarios_tsre | length }})
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link rounded-pill px-3 py-2 fw-semibold" id="tab-can-btn" data-bs-toggle="pill" data-bs-target="#tab-can">
+            <i class="bi bi-airplane me-1"></i> CAN ({{ usuarios_can | length }})
+        </button>
+    </li>
+</ul>
+{% endif %}
+
+<div class="tab-content" id="userSecaoContent">
+    <!-- VISUALIZAÇÃO PRINCIPAL / TODAS AS SEÇÕES -->
+    <div class="tab-pane fade show active" id="tab-todos" role="tabpanel">
+        
+        <!-- CARD SEÇÃO TSRE -->
+        {% if usuarios_tsre %}
+        <div class="card shadow-sm border-0 rounded-4 mb-4 overflow-hidden">
+            <div class="card-header bg-white py-3 px-4 border-bottom-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 bg-primary-subtle text-primary rounded-3">
+                        <i class="bi bi-box-seam-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Seção TSRE (Recebimento)</h6>
+                        <small class="text-muted">Usuários operacionais e administradores da TSRE</small>
+                    </div>
+                </div>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2">
+                    {{ usuarios_tsre | length }} {% if usuarios_tsre | length == 1 %}usuário{% else %}usuários{% endif %}
+                </span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="bg-light text-secondary small text-uppercase fw-bold">
+                            <tr>
+                                <th class="ps-4" width="35%">Nome Completo</th>
+                                <th width="30%">Login (Usuário)</th>
+                                <th width="20%">Função</th>
+                                <th class="text-center" width="15%">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in usuarios_tsre %}
+                            <tr>
+                                <td class="ps-4 fw-bold text-dark">{{ u.nome_completo }}</td>
+                                <td class="text-muted">{{ u.username }}</td>
+                                <td>
+                                    {% if u.role == 'super_admin' %}
+                                        <span class="badge bg-danger rounded-pill px-2 py-1">Super-Admin</span>
+                                    {% elif u.role == 'admin_tsre' or u.role == 'admin' %}
+                                        <span class="badge bg-primary rounded-pill px-2 py-1">Admin TSRE</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary rounded-pill px-2 py-1">Operador TSRE</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if u.id == current_user.id %}
+                                        <span class="badge bg-light text-muted border">(Você)</span>
+                                    {% elif pode_deletar_usuarios(current_user) %}
+                                        <form action="/usuarios/excluir/{{ u.id }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger border-0" title="Excluir">
+                                                <i class="bi bi-trash-fill"></i>
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <span class="text-muted small">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+        {% endif %}
+
+        <!-- CARD SEÇÃO CAN -->
+        {% if usuarios_can %}
+        <div class="card shadow-sm border-0 rounded-4 mb-4 overflow-hidden">
+            <div class="card-header bg-white py-3 px-4 border-bottom-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 bg-info-subtle text-info-emphasis rounded-3">
+                        <i class="bi bi-airplane-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Seção CAN (Correio Aéreo Nacional)</h6>
+                        <small class="text-muted">Usuários operacionais e administradores do CAN</small>
+                    </div>
+                </div>
+                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-3 py-2">
+                    {{ usuarios_can | length }} {% if usuarios_can | length == 1 %}usuário{% else %}usuários{% endif %}
+                </span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="bg-light text-secondary small text-uppercase fw-bold">
+                            <tr>
+                                <th class="ps-4" width="35%">Nome Completo</th>
+                                <th width="30%">Login (Usuário)</th>
+                                <th width="20%">Função</th>
+                                <th class="text-center" width="15%">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in usuarios_can %}
+                            <tr>
+                                <td class="ps-4 fw-bold text-dark">{{ u.nome_completo }}</td>
+                                <td class="text-muted">{{ u.username }}</td>
+                                <td>
+                                    {% if u.role == 'super_admin' %}
+                                        <span class="badge bg-danger rounded-pill px-2 py-1">Super-Admin</span>
+                                    {% elif u.role == 'admin_can' %}
+                                        <span class="badge bg-info text-dark rounded-pill px-2 py-1">Admin CAN</span>
+                                    {% else %}
+                                        <span class="badge bg-dark rounded-pill px-2 py-1">Operador CAN</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if u.id == current_user.id %}
+                                        <span class="badge bg-light text-muted border">(Você)</span>
+                                    {% elif pode_deletar_usuarios(current_user) %}
+                                        <form action="/usuarios/excluir/{{ u.id }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger border-0" title="Excluir">
+                                                <i class="bi bi-trash-fill"></i>
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <span class="text-muted small">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not usuarios_tsre and not usuarios_can %}
+        <div class="card border-0 shadow-sm rounded-4 text-center py-5 text-muted">
+            Nenhum usuário cadastrado.
+        </div>
+        {% endif %}
+
     </div>
+
+    {% if is_super_admin(current_user) %}
+    <!-- ABA TSRE (APENAS TSRE) -->
+    <div class="tab-pane fade" id="tab-tsre" role="tabpanel">
+        {% if usuarios_tsre %}
+        <div class="card shadow-sm border-0 rounded-4 mb-4 overflow-hidden">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="bg-light text-secondary small text-uppercase fw-bold">
+                            <tr>
+                                <th class="ps-4" width="35%">Nome Completo</th>
+                                <th width="30%">Login (Usuário)</th>
+                                <th width="20%">Função</th>
+                                <th class="text-center" width="15%">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in usuarios_tsre %}
+                            <tr>
+                                <td class="ps-4 fw-bold text-dark">{{ u.nome_completo }}</td>
+                                <td class="text-muted">{{ u.username }}</td>
+                                <td>
+                                    {% if u.role == 'super_admin' %}
+                                        <span class="badge bg-danger rounded-pill px-2 py-1">Super-Admin</span>
+                                    {% elif u.role == 'admin_tsre' or u.role == 'admin' %}
+                                        <span class="badge bg-primary rounded-pill px-2 py-1">Admin TSRE</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary rounded-pill px-2 py-1">Operador TSRE</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if u.id == current_user.id %}
+                                        <span class="badge bg-light text-muted border">(Você)</span>
+                                    {% elif pode_deletar_usuarios(current_user) %}
+                                        <form action="/usuarios/excluir/{{ u.id }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger border-0" title="Excluir">
+                                                <i class="bi bi-trash-fill"></i>
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <span class="text-muted small">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card border-0 shadow-sm rounded-4 text-center py-5 text-muted">
+            Nenhum usuário cadastrado na Seção TSRE.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ABA CAN (APENAS CAN) -->
+    <div class="tab-pane fade" id="tab-can" role="tabpanel">
+        {% if usuarios_can %}
+        <div class="card shadow-sm border-0 rounded-4 mb-4 overflow-hidden">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="bg-light text-secondary small text-uppercase fw-bold">
+                            <tr>
+                                <th class="ps-4" width="35%">Nome Completo</th>
+                                <th width="30%">Login (Usuário)</th>
+                                <th width="20%">Função</th>
+                                <th class="text-center" width="15%">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in usuarios_can %}
+                            <tr>
+                                <td class="ps-4 fw-bold text-dark">{{ u.nome_completo }}</td>
+                                <td class="text-muted">{{ u.username }}</td>
+                                <td>
+                                    {% if u.role == 'super_admin' %}
+                                        <span class="badge bg-danger rounded-pill px-2 py-1">Super-Admin</span>
+                                    {% elif u.role == 'admin_can' %}
+                                        <span class="badge bg-info text-dark rounded-pill px-2 py-1">Admin CAN</span>
+                                    {% else %}
+                                        <span class="badge bg-dark rounded-pill px-2 py-1">Operador CAN</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if u.id == current_user.id %}
+                                        <span class="badge bg-light text-muted border">(Você)</span>
+                                    {% elif pode_deletar_usuarios(current_user) %}
+                                        <form action="/usuarios/excluir/{{ u.id }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger border-0" title="Excluir">
+                                                <i class="bi bi-trash-fill"></i>
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <span class="text-muted small">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card border-0 shadow-sm rounded-4 text-center py-5 text-muted">
+            Nenhum usuário cadastrado na Seção CAN.
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 
 <!-- MODAL NOVO USUÁRIO -->
 <div class="modal fade" id="modalNovoUsuario" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title">Cadastrar Novo Usuário</h5>
@@ -73,10 +316,32 @@
                         <div class="form-text">O usuário poderá alterar isso depois.</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Nível de Acesso</label>
-                        <select name="role" class="form-select rounded-3">
-                            <option value="operador">Operador (Padrão)</option>
-                            <option value="admin">Administrador (Acesso Total)</option>
+                        <label class="form-label">Seção</label>
+                        <select name="secao" class="form-select rounded-3 w-100 text-truncate" style="max-width: 100%;">
+                            {% if is_super_admin(current_user) %}
+                                <option value="TSRE">TSRE (Recebimento)</option>
+                                <option value="CAN">CAN (Correio Aéreo Nacional)</option>
+                            {% else %}
+                                <option value="{{ current_user.secao }}">{{ current_user.secao }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nível de Acesso (Função)</label>
+                        <select name="role" class="form-select rounded-3 w-100 text-truncate" style="max-width: 100%;">
+                            {% if is_super_admin(current_user) %}
+                                <option value="operador_tsre">Operador TSRE</option>
+                                <option value="admin_tsre">Admin TSRE</option>
+                                <option value="operador_can">Operador CAN</option>
+                                <option value="admin_can">Admin CAN</option>
+                                <option value="super_admin">Super-Admin (Acesso Total)</option>
+                            {% elif current_user.secao == 'CAN' %}
+                                <option value="operador_can">Operador CAN</option>
+                                <option value="admin_can">Admin CAN</option>
+                            {% else %}
+                                <option value="operador_tsre">Operador TSRE</option>
+                                <option value="admin_tsre">Admin TSRE</option>
+                            {% endif %}
                         </select>
                     </div>
                 </div>
@@ -88,4 +353,44 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const selectSecao = document.querySelector('#modalNovoUsuario select[name="secao"]');
+    const selectRole = document.querySelector('#modalNovoUsuario select[name="role"]');
+    const isSuperAdmin = {% if is_super_admin(current_user) %}true{% else %}false{% endif %};
+
+    if (!selectSecao || !selectRole) return;
+
+    function atualizarRolesPorSecao() {
+        const secao = selectSecao.value;
+        const roleAnterior = selectRole.value;
+
+        if (secao === 'CAN') {
+            selectRole.innerHTML = `
+                <option value="operador_can">Operador CAN</option>
+                <option value="admin_can">Admin CAN</option>
+            `;
+        } else {
+            selectRole.innerHTML = `
+                <option value="operador_tsre">Operador TSRE</option>
+                <option value="admin_tsre">Admin TSRE</option>
+            `;
+        }
+
+        if (isSuperAdmin) {
+            selectRole.innerHTML += `
+                <option value="super_admin">Super-Admin (Acesso Total)</option>
+            `;
+        }
+
+        if (Array.from(selectRole.options).some(opt => opt.value === roleAnterior)) {
+            selectRole.value = roleAnterior;
+        }
+    }
+
+    selectSecao.addEventListener('change', atualizarRolesPorSecao);
+    atualizarRolesPorSecao();
+});
+</script>
 {% endblock %}

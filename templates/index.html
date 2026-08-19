@@ -48,17 +48,27 @@
 <!-- Cabeçalho Principal (Adaptável para Mobile e Desktop) -->
 <div class="row align-items-center mb-4 g-3">
     <div class="col-12 col-md-auto me-md-auto">
-        <h4 class="text-dark fw-bold mb-0">Manifestos</h4>
-        <p class="text-muted small mb-0">Gestão de cargas</p>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h4 class="text-dark fw-bold mb-0">Manifestos — Seção {{ secao_exibida or current_user.secao }}</h4>
+            {% if is_readonly %}
+                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-3 py-2">
+                    <i class="bi bi-eye-fill me-1"></i> Modo Leitura
+                </span>
+            {% endif %}
+        </div>
+        <p class="text-muted small mb-0">{% if is_readonly %}Visualização somente leitura dos manifestos{% else %}Gestão de cargas{% endif %}</p>
     </div>
     <div class="col-12 col-md-auto">
         <div class="d-flex gap-2 w-100 justify-content-between justify-content-md-end">
-            <a href="/busca" class="btn btn-white border shadow-sm btn-action text-secondary py-2 flex-fill flex-md-grow-0"><i class="bi bi-search"></i> Buscar</a>
-            <!-- Botão OCR temporariamente oculto -->
-            <a href="/escanear" class="btn btn-warning text-dark fw-bold shadow-sm btn-action py-2 flex-fill flex-md-grow-0 d-none"><i class="bi bi-camera-fill"></i> Escanear</a>
-            <a href="/novo" class="btn btn-go shadow-sm btn-action py-2 flex-fill flex-md-grow-0"><i class="bi bi-plus-lg"></i> Novo</a>
+            <a href="/busca?secao={{ secao_exibida }}" class="btn btn-white border shadow-sm btn-action text-secondary py-2 flex-fill flex-md-grow-0"><i class="bi bi-search"></i> Buscar</a>
+            {% if not is_readonly %}
+                {% if current_user.secao != 'CAN' %}
+                    <!-- Botão OCR exclusivo TSRE -->
+                    <a href="/escanear" class="btn btn-warning text-dark fw-bold shadow-sm btn-action py-2 flex-fill flex-md-grow-0 d-none"><i class="bi bi-camera-fill"></i> Escanear</a>
+                {% endif %}
+                <a href="/novo" class="btn btn-go shadow-sm btn-action py-2 flex-fill flex-md-grow-0"><i class="bi bi-plus-lg"></i> Novo</a>
+            {% endif %}
         </div>
-    </div>
 </div>
 
 <!-- VISUALIZAÇÃO MOBILE (CARDS INDIVIDUAIS) -->
@@ -73,13 +83,29 @@
                 <!-- Cabeçalho do Card: Número do Manifesto, Data e Badge -->
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <div>
-                        <span class="fw-bold text-dark fs-5 d-block">{{ m.numero_manifesto }}</span>
-                        <span class="text-muted small"><i class="bi bi-calendar3 me-1"></i>{{ m.data_manifesto }}</span>
+                        <span class="fw-bold text-dark fs-5 d-inline-block me-1">{{ m.numero_manifesto }}</span>
+                        {% if m.indicador_cruzado == 'DOUBLE_CHECK' %}
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill align-middle" title="Conferido pelo CAN e pela TSRE (✓✓)">
+                                <i class="bi bi-check-all text-primary fw-bold"></i>
+                            </span>
+                        {% elif m.indicador_cruzado == 'CHECK' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill align-middle" title="Conferido apenas pelo CAN (✓)">
+                                <i class="bi bi-check text-success fw-bold"></i>
+                            </span>
+                        {% elif m.indicador_cruzado == 'CIRCLE' %}
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill align-middle" title="Conferido apenas pela TSRE (○)">
+                                <i class="bi bi-circle text-secondary fw-bold" style="font-size:0.75rem;"></i>
+                            </span>
+                        {% endif %}
+                        <span class="text-muted small d-block"><i class="bi bi-calendar3 me-1"></i>{{ m.data_manifesto }}</span>
+                        {% if m.usuario_responsavel %}
+                        <span class="text-muted small d-block"><i class="bi bi-person-fill me-1"></i>{{ m.usuario_responsavel }}</span>
+                        {% endif %}
                     </div>
                     <div>
-                        {% if m.status == 'TOTALMENTE RECEBIDO' %}
+                        {% if pct == 100 or m.status_conferencia_secao == 'TOTALMENTE RECEBIDO' %}
                             <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Concluído</span>
-                        {% elif m.status == 'PARCIALMENTE RECEBIDO' %}
+                        {% elif pct > 0 or m.status_conferencia_secao == 'PARCIALMENTE RECEBIDO' %}
                             <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">Em Andamento</span>
                         {% else %}
                             <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill">Pendente</span>
@@ -105,25 +131,32 @@
                         <i class="bi bi-eye-fill"></i> <span class="small">Ver</span>
                     </button>
                     
-                    <!-- Botão Conferir -->
-                    <a href="/conferencia/{{ m.id }}" class="btn btn-action btn-go flex-fill py-2" onclick="return confirm('Iniciar conferência do manifesto {{ m.numero_manifesto }}?')" title="Conferir">
-                        <i class="bi bi-clipboard-check-fill"></i> <span class="small">Conferir</span>
-                    </a>
+                    {% if is_readonly %}
+                        <!-- Botão Ver Conferência (Modo Leitura) -->
+                        <a href="/conferencia/{{ m.id }}?secao={{ secao_exibida }}" class="btn btn-action btn-go flex-fill py-2" title="Ver Conferência">
+                            <i class="bi bi-clipboard-check"></i> <span class="small">Ver Conf.</span>
+                        </a>
+                    {% else %}
+                        <!-- Botão Conferir -->
+                        <a href="/conferencia/{{ m.id }}" class="btn btn-action btn-go flex-fill py-2" onclick="return confirm('Iniciar conferência do manifesto {{ m.numero_manifesto }}?')" title="Conferir">
+                            <i class="bi bi-clipboard-check-fill"></i> <span class="small">Conferir</span>
+                        </a>
 
-                    <!-- Botão Receber Tudo -->
-                    {% if m.status != 'TOTALMENTE RECEBIDO' %}
-                    <button class="btn btn-action btn-all flex-fill py-2" onclick="receberTudoManifesto({{ m.id }}, '{{ m.numero_manifesto }}')" title="Receber Manifesto Inteiro">
-                        <i class="bi bi-check-all"></i> <span class="small">Tudo</span>
-                    </button>
-                    {% endif %}
-                    
-                    <!-- Botão Excluir -->
-                    <form action="/excluir/{{ m.id }}" method="POST" onsubmit="return confirmarExclusao(this)" class="d-inline flex-fill">
-                        <input type="hidden" name="senha">
-                        <button type="submit" class="btn btn-action btn-del w-100 py-2" title="Remover">
-                            <i class="bi bi-trash-fill"></i>
+                        <!-- Botão Receber Tudo -->
+                        {% if m.status != 'TOTALMENTE RECEBIDO' %}
+                        <button class="btn btn-action btn-all flex-fill py-2" onclick="receberTudoManifesto({{ m.id }}, '{{ m.numero_manifesto }}')" title="Receber Manifesto Inteiro">
+                            <i class="bi bi-check-all"></i> <span class="small">Tudo</span>
                         </button>
-                    </form>
+                        {% endif %}
+                        
+                        <!-- Botão Excluir -->
+                        <form action="/excluir/{{ m.id }}" method="POST" onsubmit="return confirmarExclusao(this)" class="d-inline flex-fill">
+                            <input type="hidden" name="senha">
+                            <button type="submit" class="btn btn-action btn-del w-100 py-2" title="Remover">
+                                <i class="bi bi-trash-fill"></i>
+                            </button>
+                        </form>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -151,7 +184,23 @@
                     {% for m in manifestos %}
                     <tr>
                         <td class="ps-4">
-                            <span class="fw-bold text-dark fs-6">{{ m.numero_manifesto }}</span>
+                            <span class="fw-bold text-dark fs-6 d-inline-block me-1">{{ m.numero_manifesto }}</span>
+                            {% if m.indicador_cruzado == 'DOUBLE_CHECK' %}
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill align-middle" title="Conferido pelo CAN e pela TSRE (✓✓)">
+                                    <i class="bi bi-check-all text-primary fw-bold"></i>
+                                </span>
+                            {% elif m.indicador_cruzado == 'CHECK' %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill align-middle" title="Conferido apenas pelo CAN (✓)">
+                                    <i class="bi bi-check text-success fw-bold"></i>
+                                </span>
+                            {% elif m.indicador_cruzado == 'CIRCLE' %}
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill align-middle" title="Conferido apenas pela TSRE (○)">
+                                    <i class="bi bi-circle text-secondary fw-bold" style="font-size:0.75rem;"></i>
+                                </span>
+                            {% endif %}
+                            {% if m.usuario_responsavel %}
+                            <br><span class="text-muted small"><i class="bi bi-person-fill me-1"></i>{{ m.usuario_responsavel }}</span>
+                            {% endif %}
                         </td>
                         <td class="text-secondary">{{ m.data_manifesto }}</td>
                         
@@ -168,9 +217,9 @@
                                 <div class="progress-bar {% if pct == 100 %}bg-success{% else %}bg-primary{% endif %}" style="width: {{ pct }}%"></div>
                             </div>
                             <div class="mt-2">
-                                {% if m.status == 'TOTALMENTE RECEBIDO' %}
+                                {% if pct == 100 or m.status_conferencia_secao == 'TOTALMENTE RECEBIDO' %}
                                     <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Concluído</span>
-                                {% elif m.status == 'PARCIALMENTE RECEBIDO' %}
+                                {% elif pct > 0 or m.status_conferencia_secao == 'PARCIALMENTE RECEBIDO' %}
                                     <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">Em Andamento</span>
                                 {% else %}
                                     <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill">Pendente</span>
@@ -184,25 +233,32 @@
                                     <i class="bi bi-eye-fill"></i>
                                 </button>
                                 
-                                <!-- Botão Conferir (Principal) -->
-                                <a href="/conferencia/{{ m.id }}" class="btn btn-action btn-go" onclick="return confirm('Iniciar conferência do manifesto {{ m.numero_manifesto }}?')" title="Conferir">
-                                    <i class="bi bi-clipboard-check-fill"></i> <span class="d-none d-xl-inline">Conferir</span>
-                                </a>
+                                {% if is_readonly %}
+                                    <!-- Botão Ver Conferência (Modo Leitura) -->
+                                    <a href="/conferencia/{{ m.id }}?secao={{ secao_exibida }}" class="btn btn-action btn-go" title="Ver Conferência">
+                                        <i class="bi bi-clipboard-check"></i> <span class="d-none d-xl-inline">Ver Conferência</span>
+                                    </a>
+                                {% else %}
+                                    <!-- Botão Conferir (Principal) -->
+                                    <a href="/conferencia/{{ m.id }}" class="btn btn-action btn-go" onclick="return confirm('Iniciar conferência do manifesto {{ m.numero_manifesto }}?')" title="Conferir">
+                                        <i class="bi bi-clipboard-check-fill"></i> <span class="d-none d-xl-inline">Conferir</span>
+                                    </a>
 
-                                <!-- Botão RECEBER TUDO -->
-                                {% if m.status != 'TOTALMENTE RECEBIDO' %}
-                                <button class="btn btn-action btn-all" onclick="receberTudoManifesto({{ m.id }}, '{{ m.numero_manifesto }}')" title="Receber Manifesto Inteiro">
-                                    <i class="bi bi-check-all"></i> <span class="d-none d-xl-inline">Receber Tudo</span>
-                                </button>
-                                {% endif %}
-                                
-                                <!-- Botão Excluir -->
-                                <form action="/excluir/{{ m.id }}" method="POST" onsubmit="return confirmarExclusao(this)" class="d-inline">
-                                    <input type="hidden" name="senha">
-                                    <button type="submit" class="btn btn-action btn-del" title="Remover">
-                                        <i class="bi bi-trash-fill"></i>
+                                    <!-- Botão RECEBER TUDO -->
+                                    {% if m.status != 'TOTALMENTE RECEBIDO' %}
+                                    <button class="btn btn-action btn-all" onclick="receberTudoManifesto({{ m.id }}, '{{ m.numero_manifesto }}')" title="Receber Manifesto Inteiro">
+                                        <i class="bi bi-check-all"></i> <span class="d-none d-xl-inline">Receber Tudo</span>
                                     </button>
-                                </form>
+                                    {% endif %}
+                                    
+                                    <!-- Botão Excluir -->
+                                    <form action="/excluir/{{ m.id }}" method="POST" onsubmit="return confirmarExclusao(this)" class="d-inline">
+                                        <input type="hidden" name="senha">
+                                        <button type="submit" class="btn btn-action btn-del" title="Remover">
+                                            <i class="bi bi-trash-fill"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -317,7 +373,7 @@
 
                         <!-- Novo Comentário -->
                         <div class="input-group">
-                            <input type="text" class="form-control rounded-start-3" id="txtNovoComentario" placeholder="Escrever comentário..." maxlength="255">
+                            <input type="text" class="form-control rounded-start-3" id="txtNovoComentario" placeholder="Escrever comentário..." maxlength="255" onkeydown="if(event.key==='Enter'){event.preventDefault(); adicionarComentario();}">
                             <button class="btn btn-primary" onclick="adicionarComentario()"><i class="bi bi-send-fill"></i></button>
                         </div>
                     </div>
@@ -372,6 +428,9 @@
     }
     
     const USUARIO_LOGADO = "{{ current_user.nome }}";
+    const SECAO_USUARIO = "{{ current_user.secao }}";
+    const SECAO_EXIBIDA = "{{ secao_exibida }}";
+    const IS_SUPER_ADMIN = {{ 'true' if current_user.role == 'super_admin' else 'false' }};
 
     // ─── OBSERVAÇÕES DETALHADAS (v4) ───
     async function abrirObs(btn) { 
@@ -386,34 +445,43 @@
 
     async function carregarDetalhesObs(volId) {
         try {
-            const res = await fetch(`/api/volume/${volId}/observacoes`);
+            const res = await fetch(`/api/volume/${volId}/observacoes?secao=${SECAO_EXIBIDA}`);
             const data = await res.json();
 
             // 1. Renderizar Caixas
-            const tbody = document.getElementById('tblCaixasRastreioBody');
-            tbody.innerHTML = '';
-            data.caixas.forEach(c => {
-                let statusBadge = '<span class="badge bg-secondary">Pendente</span>';
-                let det = '-';
-                if (c.status === 'RECEBIDA') {
-                    statusBadge = '<span class="badge bg-success">Recebida</span>';
-                    det = `${c.usuario_conferente}<br><span class="text-muted small">${formatarDataBRT(c.data_hora_recepcao)}</span>`;
-                } else if (c.status === 'RETIRADO POR OUTRA PESSOA') {
-                    statusBadge = '<span class="badge bg-danger">Retirada</span>';
-                    det = `Retirador: ${c.retirado_por || '-'}`;
-                } else if (c.motivo_nao_recebido) {
-                    statusBadge = '<span class="badge bg-warning text-dark">Não Rec.</span>';
-                    det = `Motivo: ${c.motivo_nao_recebido}`;
-                }
+            const tbody = document.getElementById('tbObsCaixas') || document.getElementById('tblCaixasRastreioBody');
+            if (tbody) {
+                tbody.innerHTML = '';
+                data.caixas.forEach(c => {
+                    let statusBadge = '<span class="badge bg-secondary">Pendente</span>';
+                    let det = '-';
+                    let retirador = c.retirado_por || data.info_fixas.retirado_por || '';
+                    let motivo = c.motivo_nao_recebido || data.info_fixas.motivo_nao_recebido || '';
+                    let statusEfetivo = c.status;
+                    if ((statusEfetivo === 'NÃO RECEBIDA' || statusEfetivo === 'PENDENTE') && data.info_fixas.status) {
+                        statusEfetivo = data.info_fixas.status;
+                    }
 
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="fw-bold">Cx ${c.numero_caixa}</td>
-                        <td>${statusBadge}</td>
-                        <td>${det}</td>
-                    </tr>
-                `;
-            });
+                    if (statusEfetivo === 'RECEBIDA') {
+                        statusBadge = '<span class="badge bg-success">Recebida</span>';
+                        det = `${c.usuario_conferente || '-'}<br><span class="text-muted small">${formatarDataBRT(c.data_hora_recepcao)}</span>`;
+                    } else if (statusEfetivo === 'RETIRADO POR OUTRA PESSOA' || retirador) {
+                        statusBadge = '<span class="badge bg-danger">Retirada</span>';
+                        det = `Retirador: ${retirador || '-'}`;
+                    } else if (statusEfetivo === 'NÃO RECEBIDO' || motivo) {
+                        statusBadge = '<span class="badge bg-warning text-dark">Não Rec.</span>';
+                        det = `Motivo: ${motivo || '-'}`;
+                    }
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="fw-bold">${c.numero_caixa} / ${data.caixas.length}</td>
+                            <td>${statusBadge}</td>
+                            <td>${det}</td>
+                        </tr>
+                    `;
+                });
+            }
 
             // 2. Renderizar Info Fixas
             document.getElementById('lblFixoRetiradoBy').innerText = data.info_fixas.retirado_por || '-';
@@ -430,12 +498,18 @@
             } else {
                 data.comentarios.forEach(c => {
                     let btnExcluir = '';
-                    if (c.usuario === USUARIO_LOGADO) {
+                    if (c.auto_gerada === 1) {
+                        if (IS_SUPER_ADMIN) {
+                            btnExcluir = `<span class="badge bg-secondary-subtle text-secondary me-1" style="font-size:0.65rem;"><i class="bi bi-lock-fill"></i> Auto</span><button class="btn btn-xs text-danger p-0 border-0 ms-1" onclick="excluirComentario(${c.id})"><i class="bi bi-trash"></i></button>`;
+                        } else {
+                            btnExcluir = `<span class="badge bg-secondary-subtle text-secondary ms-1" style="font-size:0.65rem;" title="Observação gerada automaticamente por outra seção"><i class="bi bi-lock-fill"></i> Auto</span>`;
+                        }
+                    } else if (c.usuario === USUARIO_LOGADO || IS_SUPER_ADMIN) {
                         btnExcluir = `<button class="btn btn-xs text-danger p-0 border-0 ms-2" onclick="excluirComentario(${c.id})"><i class="bi bi-trash"></i></button>`;
                     }
 
                     list.innerHTML += `
-                        <div class="list-group-item px-2 py-2 border-0 border-bottom">
+                        <div class="list-group-item px-2 py-2 border-0 border-bottom ${c.auto_gerada === 1 ? 'bg-light' : ''}">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="fw-bold text-dark small">${c.usuario}</span>
                                 <span class="text-muted" style="font-size:0.7rem;">${c.timestamp_formatado} ${btnExcluir}</span>
@@ -462,6 +536,12 @@
             if (res.ok) {
                 document.getElementById('txtNovoComentario').value = '';
                 await carregarDetalhesObs(id);
+                // Atualizar o botão de lápis na página
+                document.querySelectorAll(`.btn-note[data-id="${id}"]`).forEach(btn => {
+                    btn.classList.add('has-obs');
+                    btn.dataset.obs = txt;
+                    btn.innerHTML = '<i class="bi bi-pencil-fill"></i>';
+                });
             } else {
                 const err = await res.json();
                 alert(err.msg || "Erro ao adicionar comentário.");
@@ -532,7 +612,7 @@
                 alert("Dados de controle atualizados!");
                 cancelarEdicaoFixa();
                 await carregarDetalhesObs(id);
-                document.getElementById('modalObs').addEventListener('hidden.bs.modal', () => window.location.reload(), {once: true});
+                window.location.reload();
             } else {
                 alert(data.msg || "Erro ao salvar.");
             }
@@ -541,12 +621,27 @@
 
     // DESFAZER (Interface Principal)
     async function desfazerRecebimentoDetalhes(vid) { 
-        const s = prompt("🔒 DESFAZER\n\nRequer senha de administrador:"); 
-        if (s !== "pitaco" && s !== "admin123") return alert("Senha incorreta.");
+        let s = null;
+        if (!IS_SUPER_ADMIN && SECAO_USUARIO !== 'ADMIN') {
+            s = prompt("🔒 AÇÃO RESTRITA A ADMINISTRADOR\n\nDigite a senha do Administrador ou Superadmin para desfazer:");
+            if (!s) return;
+        } else {
+            if (!confirm("Desfazer recebimento deste volume?")) return;
+        }
         
         try {
-            const res = await fetch('/api/desfazer', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume_id:vid})});
-            if (res.ok) { alert("Desfeito com sucesso!"); window.location.reload(); }
+            const res = await fetch('/api/desfazer', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({volume_id: vid, senha: s})
+            });
+            if (res.ok) {
+                alert("Desfeito com sucesso!");
+                window.location.reload();
+            } else {
+                const err = await res.json();
+                alert(err.msg || "Erro ao desfazer.");
+            }
         } catch(e) { alert("Erro de conexão."); }
     }
 
@@ -557,13 +652,15 @@
         corpo.innerHTML = '<tr><td colspan="9" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
         modalDetalhes.show();
         try {
-            const res = await fetch(`/api/manifesto/${id}/volumes`);
+            const res = await fetch(`/api/manifesto/${id}/volumes?secao=${SECAO_EXIBIDA}`);
             const volumes = await res.json();
             corpo.innerHTML = '';
+            const podeOperarSecao = (IS_SUPER_ADMIN || SECAO_EXIBIDA === SECAO_USUARIO);
             volumes.forEach(v => {
                 const tr = document.createElement('tr');
-                const isRec = v.status === 'COMPLETO' || v.status === 'TOTALMENTE RECEBIDO';
+                const isRec = v.status === 'COMPLETO' || v.status === 'TOTALMENTE RECEBIDO' || v.status === 'RECEBIDO';
                 const isRet = v.status === 'RETIRADO POR OUTRA PESSOA';
+                const isNaoRec = v.status === 'NÃO RECEBIDO';
                 let dataRec = formatarDataBRT(v.data_hora_ultima_recepcao);
                 
                 let btnObs = `<button class="btn-note ${v.observacao?'has-obs':''}" data-id="${v.id}" data-num="${v.numero_volume}" data-obs="${v.observacao||''}" onclick="abrirObs(this)">${v.observacao?'<i class="bi bi-pencil-fill"></i>':'<i class="bi bi-pencil"></i>'}</button>`;
@@ -575,7 +672,7 @@
                 }
 
                 let btnDesfazer = '-';
-                if (isRec || isRet) {
+                if (podeOperarSecao && v.pode_operar !== false && (isRec || isRet || isNaoRec || v.status === 'PARCIAL')) {
                     btnDesfazer = `<button class="btn-undo-sm" onclick="desfazerRecebimentoDetalhes(${v.id})" title="Desfazer"><i class="bi bi-arrow-counterclockwise"></i></button>`;
                 }
 
@@ -583,13 +680,16 @@
                 let statusBadge = '<span class="badge bg-secondary">Pendente</span>';
                 if (isRec) statusBadge = '<span class="badge bg-success">Recebido</span>';
                 else if (isRet) statusBadge = '<span class="badge bg-danger">Retirado</span>';
+                else if (isNaoRec) statusBadge = '<span class="badge bg-warning text-dark">Não Recebido</span>';
                 else if (v.status === 'PARCIAL') statusBadge = '<span class="badge bg-warning text-dark">Parcial</span>';
 
                 if (isRet) tr.classList.add('row-retirado');
 
+                let extraBadge = v.secao_extra ? `<br><span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill" style="font-size:0.65rem;"><i class="bi bi-plus-circle-fill me-1"></i>Extra ${v.secao_extra}</span>` : '';
+
                 tr.innerHTML = `
                     <td class="text-center fw-bold text-dark">${v.remetente}</td>
-                    <td class="text-center">${v.numero_volume}</td>
+                    <td class="text-center">${v.numero_volume}${extraBadge}</td>
                     <td class="text-center">${v.destinatario}</td>
                     <td class="text-center">${btnObs}</td>
                     <td class="text-center"><span class="badge bg-light text-dark border">${v.quantidade_recebida}/${v.quantidade_expedida}</span></td>
@@ -601,6 +701,36 @@
                 corpo.appendChild(tr);
             });
         } catch(e) { corpo.innerHTML = '<tr><td colspan="9" class="text-danger text-center">Erro ao carregar.</td></tr>'; }
+    }
+
+    async function autorizarManifesto(id, numero) {
+        if (!confirm(`Deseja autorizar o manifesto ${numero} para a seção {{ current_user.secao }}?`)) return;
+        try {
+            const res = await fetch(`/api/manifesto/${id}/autorizar`, { method: 'POST' });
+            const data = await res.json();
+            if (data.status === 'sucesso') {
+                location.reload();
+            } else {
+                alert(data.msg || 'Erro ao autorizar manifesto.');
+            }
+        } catch (e) {
+            alert('Erro de comunicação com o servidor ao autorizar manifesto.');
+        }
+    }
+
+    async function negarManifesto(id, numero) {
+        if (!confirm(`Deseja negar o manifesto ${numero} para a seção {{ current_user.secao }}?`)) return;
+        try {
+            const res = await fetch(`/api/manifesto/${id}/negar`, { method: 'POST' });
+            const data = await res.json();
+            if (data.status === 'sucesso') {
+                location.reload();
+            } else {
+                alert(data.msg || 'Erro ao negar manifesto.');
+            }
+        } catch (e) {
+            alert('Erro de comunicação com o servidor ao negar manifesto.');
+        }
     }
 </script>
 {% endblock %}

@@ -17,9 +17,9 @@ class ManifestoExtractor:
         self.dados_manifesto = {}
         self.volumes = []
         
-    def extrair(self) -> Tuple[Dict, List[Dict]]:
+    def extrair(self, filtro_destinatario: Optional[str] = None) -> Tuple[Dict, List[Dict]]:
         """
-        Extrai dados do manifesto
+        Extrai dados do manifesto.
         Retorna: (dados_cabecalho, lista_volumes)
         """
         if not self.pdf_path.exists():
@@ -35,8 +35,11 @@ class ManifestoExtractor:
             # Extrair dados do cabeçalho
             self.dados_manifesto = self._extrair_cabecalho(texto_completo)
             
-            # Extrair volumes (destinatário PAMALS e variações)
-            self.volumes = self._extrair_volumes(texto_completo)
+            # Extrair volumes (com ou sem filtro)
+            if filtro_destinatario == 'PAMALS':
+                self.volumes = self._extrair_volumes_pamals(texto_completo)
+            else:
+                self.volumes = self._extrair_volumes_todos(texto_completo)
         
         return self.dados_manifesto, self.volumes
     
@@ -119,7 +122,8 @@ class ManifestoExtractor:
                 
         return False
     
-    def _extrair_volumes(self, texto: str) -> List[Dict]:
+    def _extrair_volumes_todos(self, texto: str) -> List[Dict]:
+        """Extrai TODOS os volumes do PDF sem filtrar por destinatário"""
         volumes = []
         linhas = texto.split('\n')
         
@@ -151,43 +155,31 @@ class ManifestoExtractor:
                             numero_volume += partes[j+1]
                         
                         # --- 1. Extração de Quantidade ---
-                        # Tenta achar um número inteiro isolado à direita
                         for k in range(j + 1, len(partes)):
                             token = partes[k]
                             if re.match(r'^\d+$', token) and not re.match(r'\d{12}', token):
-                                # Evita confundir com prioridade (geralmente 2 digitos no final)
-                                # A qtd geralmente vem antes do peso ou antes da prioridade
                                 quantidade_exp = int(token)
                                 break
 
-                        # --- 2. Extração de Destinatário (Inteligente) ---
-                        # O destinatário está à esquerda do número do volume.
-                        # Pode ser "PAMALS", "PAMALS - PAMA", "PARQUE DE MATERIAL", etc.
-                        # Vamos pegar os tokens anteriores e ver se algum contém as palavras-chave.
-                        
+                        # --- 2. Extração de Destinatário ---
                         if j > 0:
-                            # Reconstrói uma string com os 4 tokens anteriores para análise
                             inicio_busca = max(0, j - 5)
                             texto_anterior = " ".join(partes[inicio_busca:j])
                             
-                            # Verifica se é PAMALS
                             if self._e_destinatario_pamals(texto_anterior):
                                 destinatario = "PAMALS"
-                                
-                                # Se achou PAMALS, o remetente é o que vem antes disso.
-                                # Essa lógica é complexa pois o PDF pode quebrar palavras.
-                                # Vamos assumir o primeiro token da linha como remetente se for PAMALS
-                                if j > 1:
-                                    # Pega tudo antes do j, remove o que parece ser destino
-                                    # Simplificação: O remetente geralmente é o primeiro token da linha
-                                    remetente_bruto = partes[0]
-                                    if j > 1 and not self._e_destinatario_pamals(partes[0]):
-                                         remetente_bruto = partes[0] + " " + partes[1]
-                                    
-                                    remetente = self._padronizar_remetente(remetente_bruto)
+                                remetente_bruto = partes[0]
+                                if j > 1 and not self._e_destinatario_pamals(partes[0]):
+                                    remetente_bruto = partes[0] + " " + partes[1]
+                                remetente = self._padronizar_remetente(remetente_bruto)
                             else:
-                                # Não é PAMALS, ignora
-                                destinatario = "OUTROS"
+                                remetente_bruto = partes[0]
+                                remetente = self._padronizar_remetente(remetente_bruto)
+                                if j > 1:
+                                    dest_bruto = " ".join(partes[1:j]).strip()
+                                    destinatario = dest_bruto if dest_bruto else "OUTROS"
+                                else:
+                                    destinatario = "OUTROS"
 
                         # --- 3. Peso e Cubagem ---
                         for m in range(j + 1, min(j + 8, len(partes))):
@@ -202,21 +194,20 @@ class ManifestoExtractor:
                         if 'Aeronáutico' in linha: tipo_material = 'Aeronáutico'
                         elif 'Gás' in linha: tipo_material = 'Gás Comprimido'
                         
-                        # A prioridade é geralmente o último número de 2 dígitos
                         for p in reversed(partes):
                             if re.match(r'^\d{2}$', p):
                                 prioridade = p
                                 break
                         
-                        break # Sai do loop das partes
+                        break
                 
-                # Validação Final
-                if destinatario == "PAMALS" and numero_volume:
+                if numero_volume:
                     if not remetente: remetente = "DESCONHECIDO"
+                    if not destinatario: destinatario = "OUTROS"
                     
                     volumes.append({
                         'remetente': remetente,
-                        'destinatario': 'PAMALS',
+                        'destinatario': destinatario,
                         'numero_volume': numero_volume,
                         'quantidade_expedida': quantidade_exp,
                         'quantidade_recebida': 0,
@@ -229,12 +220,21 @@ class ManifestoExtractor:
         
         return volumes
 
+    def _extrair_volumes_pamals(self, texto: str) -> List[Dict]:
+        """Extrai apenas os volumes destinados ao PAMALS (filtro TSRE)"""
+        todos = self._extrair_volumes_todos(texto)
+        return [v for v in todos if v['destinatario'] == 'PAMALS' or self._e_destinatario_pamals(v['destinatario'])]
+    
+    def _extrair_volumes(self, texto: str) -> List[Dict]:
+        """Método legado mantido para retrocompatibilidade"""
+        return self._extrair_volumes_pamals(texto)
+
 # ==================== FUNÇÕES AUXILIARES ====================
 
-def extrair_manifesto_pdf(pdf_path: str) -> Tuple[Dict, List[Dict], List[str]]:
+def extrair_manifesto_pdf(pdf_path: str, filtro_destinatario: Optional[str] = None) -> Tuple[Dict, List[Dict], List[str]]:
     try:
         extractor = ManifestoExtractor(pdf_path)
-        dados_manifesto, volumes = extractor.extrair()
+        dados_manifesto, volumes = extractor.extrair(filtro_destinatario=filtro_destinatario)
         
         erros = []
         if not dados_manifesto.get('numero_manifesto'):
