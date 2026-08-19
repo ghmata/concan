@@ -48,7 +48,7 @@ def diagnosticar_admins(cursor):
     """Mostra os administradores cadastrados no banco."""
     print("\n--- Administradores Cadastrados ---")
     cursor.execute("""
-        SELECT username, nome, role, secao FROM users 
+        SELECT username, nome_completo, role, secao FROM users 
         WHERE role IN ('super_admin', 'admin_tsre', 'admin_can', 'admin')
         ORDER BY role, username
     """)
@@ -148,7 +148,7 @@ def migrar():
                 else:
                     senha_hash = generate_password_hash(senha)
                     cursor.execute("""
-                        INSERT INTO users (username, password_hash, nome, role, secao)
+                        INSERT INTO users (username, password_hash, nome_completo, role, secao)
                         VALUES (?, ?, ?, 'super_admin', 'TSRE')
                     """, (username, senha_hash, nome))
                     alteracoes += 1
